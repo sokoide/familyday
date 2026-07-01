@@ -1,0 +1,21 @@
+# dependencies
+2026/server/vendor/
+2026/web/node_modules/
+
+# build output
+2026/server/static/
+2026/web/dist/
+
+# runtime data (生成物・永続化)
+2026/server/data/
+
+# env / secrets
+.env
+*.local
+
+# OS
+.DS_Store
+
+# TS incremental build info
+2026/web/tsconfig.tsbuildinfo
+*.tsbuildinfo

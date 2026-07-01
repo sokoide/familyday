@@ -1,0 +1,339 @@
+# ドラゴン城の秘宝 — AI魔法のゲームブック(2026)
+
+家族向けイベントブース用の **5分クイック体験ゲーム**。子供がマイクに向かって「呪文(プロンプト)」を唱え、LLM が `Great / Good / Bad` の3値で判定し、3つのステージをライフ制で進む。クリア後は残ライフに応じて LLM がストーリーと画像を生成し、**QRコード / メール** で持ち帰れる。
+
+> 対象稼働: 会場の Windows 11 Laptop × 3台(Chrome/Edge)、同時3並列、1プレイ約5分、1時間あたり12組。
+
+---
+
+## 目次
+
+- [全体構成](#全体構成)
+- [アーキテクチャ(Clean Architecture)](#アーキテクチャclean-architecture)
+- [ゲーム進行と状態遷移](#ゲーム進行と状態遷移)
+- [ディレクトリ構成](#ディレクトリ構成)
+- [API仕様](#api仕様)
+- [クイックスタート(ローカル開発)](#クイックスタートローカル開発)
+- [環境変数](#環境変数)
+- [動作確認(curl)](#動作確認curl)
+- [デプロイ(本番)](#デプロイ本番)
+- [テスト・静的解析](#テスト静的解析)
+- [安全性の設計](#安全性の設計)
+- [来年(2027)への再利用](#来年2027への再利用)
+
+---
+
+## 全体構成
+
+ブラウザ(フロント)と Go サーバ(バックエンド)の2層。サーバは API キーを保持し Gemini/Imagen を呼ぶ。フロントはビルド成果物をサーバから静的配信される。
+
+```mermaid
+flowchart LR
+  subgraph 会場[会場 Windows 11 Laptop ×3]
+    B1[ブラウザ Chrome/Edge<br/>音声入力・UI]
+    B2[ブラウザ]
+    B3[ブラウザ]
+  end
+  subgraph 鯖[公開 Linux サーバ 独自ドメイン HTTPS]
+    SRV[Go サーバ<br/>静的配信 + REST API]
+    SRV -->|判定/生成| GEM[(Google Gemini API<br/>gemini-2.5-flash + Imagen)]
+    SRV -->|永続化| FS[(ローカルFS<br/>endings/*.json<br/>generated/*.png)]
+  end
+  B1 -->|HTTPS| SRV
+  B2 --> SRV
+  B3 --> SRV
+  MOB[スマホ] -.QR/メールで後日閲覧.-> SRV
+```
+
+- **LLM/画像**: Google Gemini API(`gemini-2.5-flash` で判定・ストーリー、`Imagen` で画像)
+- **音声入力**: Web Speech API(ブラウザ内蔵)。HTTPS または localhost が必要(公開サーバ前提なのでOK)
+- **持ち帰り**: QR/メールのURLはサーバの公開ドメインそのまま(1週間アクセス可能)
+
+---
+
+## アーキテクチャ(Clean Architecture)
+
+Go サーバは `/cleanarch-master` スキル準拠の **厳密な4層**。依存は内側(Domain)へ一方向。Domain は技術(net/http・SDK・ORM)に一切依存しない。
+
+```mermaid
+flowchart TB
+  subgraph 外側[Adapters — 副作用・詳細]
+    direction LR
+    PRES[Presentation / http<br/>handler・DTO・エラー→HTTP status]
+    INFRA[Infrastructure<br/>gemini / persistence / ratelimit / sysid]
+  end
+  subgraph 内側[Application — ルール]
+    UC[UseCases<br/>JudgeUseCase / EndingUseCase<br/>+ ポート定義]
+    DOM[Domain<br/>Verdict / Lives / EndingType<br/>Stage / 適用ルール]
+  end
+  PRES -->|呼出| UC
+  UC -->|使用| DOM
+  INFRA -.->|実装| UC
+  ROOT[Composition Root<br/>cmd/server/main.go] --> PRES
+  ROOT -.->|注入| INFRA
+```
+
+| 層 | 役割 | 制約 |
+| --- | --- | --- |
+| **Domain** | 値オブジェクト・エンティティ・純粋ルール | 技術 import 禁止・単体テスト可能 |
+| **UseCases** | ワークフロー指揮・ポート(インタフェース)の定義 | SQL/HTTP/SDK 直接呼出禁止 |
+| **Presentation** | inbound HTTP。リクエスト解析→UseCase→DTO生成 | 業務判断を持たない |
+| **Infrastructure** | outbound。Gemini/Imagen/ファイル/レートリミット | UseCase のポートを実装 |
+| **Composition Root** | 具象を組み立て、内側へはインタフェースを注入 | 唯一、全層を知ってよい |
+
+**フロント(TypeScript)はエッセンス適用**: `app`(ロジック) / `ports`(インタフェース) / `infra`(fetch・Web Speech の具象) / `ui`(描画) に分離し、infra をモックに差し替え可能。
+
+---
+
+## ゲーム進行と状態遷移
+
+```mermaid
+stateDiagram-v2
+  [*] --> Intro
+  Intro --> Stage1: 開始(タイマー開始 5:00)
+  Stage1 --> Stage2: Great/Good
+  Stage2 --> Stage3: Great/Good
+  Stage3 --> Ending: Great/Good<br/>(route=defeat|befriend)
+  Stage1 --> Ending: lives=0
+  Stage2 --> Ending: lives=0
+  Stage3 --> Ending: lives=0
+  Stage1 --> Stage1: Bad(リトライ・lives-1)
+  Stage2 --> Stage2: Bad
+  Stage3 --> Stage3: Bad
+  Stage1 --> Ending: タイムアップ
+  Stage2 --> Ending: タイムアップ
+  Stage3 --> Ending: タイムアップ
+  Ending --> [*]: QR/メール表示
+```
+
+**判定とライフ**:
+
+| 判定 | ライフ変化 | 進行 |
+| --- | --- | --- |
+| Great(大成功) | ±0 | 次ステージへ |
+| Good(成功) | -1 | 次ステージへ |
+| Bad(失敗) | -1 | 同ステージでリトライ |
+
+ライフ0、または5分タイムアップで強制的にエンディングへ。
+
+**エンディング3分岐**(`DecideEnding`):
+
+| 種類 | 条件 |
+| --- | --- |
+| 🏆 great | クリア時・満ライフ、またはドラゴンと友好(`befriend`) |
+| ✨ success | クリア時・ライフ1〜2 |
+| 😢 gameover | ライフ0、または未クリア(タイムアップ含む) |
+
+---
+
+## ディレクトリ構成
+
+```
+2026/
+├── .env.example                 # 環境変数テンプレート
+├── README.md
+├── server/                      # バックエンド(Go)
+│   ├── go.mod
+│   ├── cmd/server/main.go       # Composition Root: ワイヤリング・ルーティング・静的配信
+│   └── internal/
+│       ├── domain/              # Verdict/Lives/EndingType/Stage + 適用・決定ルール
+│       │   ├── verdict.go
+│       │   ├── lives.go
+│       │   ├── ending.go
+│       │   ├── stage.go
+│       │   ├── catalog.go       # ★3ステージの定義(成功条件・描写)= 差し替えポイント
+│       │   ├── ending_entity.go
+│       │   └── errors.go
+│       ├── usecase/             # JudgeUseCase/EndingUseCase + ポート
+│       │   ├── ports.go
+│       │   ├── judge.go
+│       │   └── ending.go
+│       └── adapters/
+│           ├── presentation/http/   # handler/DTO/mapper(エラー→status)
+│           └── infra/
+│               ├── gemini/          # LLMJudgeGateway/StoryGenerator/ImagenGenerator + プロンプト
+│               ├── persistence/     # EndingRepository(1エンディング=1ファイル)
+│               ├── ratelimit/       # メモリ sliding-window
+│               └── sysid/           # ID生成・時刻
+└── web/                         # フロント(TypeScript + Vite)
+    ├── package.json
+    ├── vite.config.ts           # outDir=../server/static, dev プロキシ
+    ├── index.html
+    └── src/
+        ├── app/                 # main(状態機械) / state / timer / stages(★差し替え)
+        ├── ports/               # api / speech のインタフェース
+        ├── infra/               # fetchApi / webSpeech の具象
+        ├── ui/                  # qr / share(mailto/fallback)
+        └── style.css
+```
+
+★ の付いたファイルが、来年差し替える主なポイント。
+
+---
+
+## API仕様
+
+全エンドポイント JSON・同一オリジン(CORS 不要)。
+
+### `POST /api/judge` — ステージ判定
+
+```jsonc
+// req
+{ "stageId": "stage1", "sessionId": "s1", "input": "ゴーレムどいて!" }
+// res 200
+{ "verdict": "Great", "route": "", "message": "...", "livesDelta": 0, "advance": true }
+```
+- `verdict`: `Great` | `Good` | `Bad`。`route` は `stage3` のみ `defeat`|`befriend`。
+- `input` は1..200文字(空・超過は `400 INVALID_INPUT`)。
+
+### `POST /api/ending` — エンディング生成
+
+```jsonc
+// req
+{ "lives": 3, "finalAction": "befriend", "cleared": true, "sessionId": "s1" }
+// res 200
+{ "endingId":"abc...", "endingType":"great", "story":"...",
+  "imageUrl":"https://DOMAIN/img/abc.png", "resultUrl":"https://DOMAIN/r/abc" }
+```
+
+### `GET /api/result/{id}` — 結果取得(QR/メールのリンク先)
+
+```jsonc
+// res 200
+{ "endingType":"great", "story":"...", "imageUrl":"...", "resultUrl":"...", "createdAt":"2026-..." }
+```
+
+**エラーマッピング**: `INVALID_INPUT`→400 / `RATE_LIMITED`→429 / `NOT_FOUND`→404 / `UPSTREAM`→502。
+
+---
+
+## クイックスタート(ローカル開発)
+
+### 前提
+- Go 1.26+ / Node 20+
+- Google AI Studio で発行した Gemini API キー
+
+### 1. フロントのビルド
+
+```bash
+cd 2026/web
+npm install
+npm run build        # 成果物 -> ../server/static/
+# 開発サーバを使う場合(API を :8080 へプロキシ):
+npm run dev          # http://localhost:5173
+```
+
+### 2. バックエンドの起動
+
+```bash
+cd 2026/server
+cp ../.env.example ../.env     # .env に GEMINI_API_KEY を記入
+go run ./cmd/server            # http://localhost:8080
+```
+
+ブラウザで `http://localhost:8080` を開く。マイクは localhost でも動作する。
+
+---
+
+## 環境変数
+
+`.env`(またはプロセス環境変数)で設定。`cmd/server/main.go` が `godotenv` で自動読込する。
+
+| 変数 | 既定値 | 説明 |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | (必須) | Google AI Studio で発行 |
+| `PUBLIC_BASE_URL` | `http://localhost:8080` | QR/画像の**絶対URL**生成用。本番は `https://你的域名` |
+| `PORT` | `8080` | 待受ポート |
+| `DATA_DIR` | `data` | エンディングJSON・生成画像の格納先 |
+| `STATIC_DIR` | `static` | フロントビルド成果物の配置先 |
+| `GEMINI_MODEL_JUDGE` | `gemini-2.5-flash` | 判定用モデル |
+| `GEMINI_MODEL_STORY` | `gemini-2.5-flash` | ストーリー生成用モデル |
+| `GEMINI_MODEL_IMAGEN` | `imagen-3.0-generate-002` | 画像生成モデル |
+
+---
+
+## 動作確認(curl)
+
+```bash
+# 判定
+curl -X POST localhost:8080/api/judge -H 'Content-Type: application/json' \
+  -d '{"stageId":"stage1","sessionId":"t1","input":"ゴーレムどいて!"}'
+
+# エンディング生成(Imagen 呼出)
+curl -X POST localhost:8080/api/ending -H 'Content-Type: application/json' \
+  -d '{"lives":3,"finalAction":"befriend","cleared":true,"sessionId":"t1"}'
+
+# 結果取得
+curl localhost:8080/api/result/<endingId>
+```
+
+---
+
+## デプロイ(本番)
+
+1. 公開 Linux サーバへ `2026/` を配置。
+2. サーバ上で `cd 2026/web && npm install && npm run build`(成果物を `server/static/` へ)。
+3. `.env` の `PUBLIC_BASE_URL` を `https://你的域名` に設定。
+4. リバースプロキシ(nginx 等)で **HTTPS(独自ドメイン)** → `:8080` へ転送。マイク利用に HTTPS が必須。
+5. systemd 等でバイナリ(`go build -o familyday ./cmd/server`)を常駐。
+
+> イベント終了後は **1週間で公開終了** する。
+
+---
+
+## テスト・静的解析
+
+```bash
+cd 2026/server
+
+go test ./...                                                    # 単体テスト(domain/usecase/presentation)
+go vet ./...                                                     # 静的解析
+bash /Users/scott/.claude-glm/skills/cleanarch-master/scripts/check.sh ./internal/...  # Clean Architecture 依存方向
+```
+
+- Domain: 純粋関数のテーブル駆動テスト(モック不要)
+- UseCases: フェイクポートでオーケストレーションを検証
+- Presentation: UseCase をスタブ化し、エラー→HTTPステータス変換を検証
+
+---
+
+## 多言語対応(日本語 / English)
+
+ゲーム開始画面で **日本語 / English** を切り替えられる。選択は `localStorage` に保存され、次回も維持。
+
+- **UI 文字列**: `web/src/app/messages.ts` に集約。ハードコードなし。新言語追加は `dictionaries` に1エントリ追加するだけ。
+- **音声認識**: 選択言語に合わせて `ja-JP` / `en-US` で認識。
+- **LLM 応答**: フロントが `lang` を `/api/judge`・`/api/ending` に送り、サーバが判定メッセージ・ストーリーをその言語で生成する(`domain.NormalizeLang` で不正値は `ja` に正規化)。画像プロンプトは視覚のため言語非依存。
+- **メール**: 件名/本文も各言語。
+
+```mermaid
+flowchart LR
+  SEL[言語選択 ja/en] -->|localStorage| UI[messages.ts でUI切替]
+  SEL -->|lang 送信| API[/api/judge /api/ending]
+  API --> SRV[サーバ: 応答言語を切替]
+  SRV --> GEM[Gemini: その言語で生成]
+```
+
+
+
+- **APIキーはサーバのみ**。ブラウザには公開しない。
+- **プロンプトインジェクション対策**: ユーザー入力は `contents` の user パートに置き、システムプロンプトには埋め込まない。「指示は Bad」を明示。
+- **Imagen プロンプトは固定テンプレート**: ユーザー入力を画像生成プロンプトに直接混ぜない。
+- **子供向け safetySettings**: 性的コンテンツは最厳(`BLOCK_LOW_AND_ABOVE`)、ファンタジー戦闘は許容(`BLOCK_ONLY_HIGH`)。
+- **入力バリデーション**: 200文字上限・空拒否・`DisallowUnknownFields`。
+- **メール送信は `mailto:`**: アドレスをサーバへ送信・保存しない(プライバシー安全)。
+- **画像生成失敗時フォールバック**: フロント `onerror` で data-URI の絵文字画像に差し替え、体験を止めない。
+- **結果URLは16バイトUUID**: 推測困難。認証なしでも実質安全。
+
+---
+
+## 来年(2027)への再利用
+
+1. `2026/` を `2027/` にコピー。
+2. 以下を差し替え(テーマ・絵柄・成功条件を変えるだけ):
+   - `server/internal/domain/catalog.go` — ステージ定義(成功条件・描写)
+   - `web/src/app/messages.ts` — 画面表示テキスト・ステージ情報(日/英)
+   - `server/internal/adapters/infra/gemini/prompts.go` — 審判プロンプト・画像テンプレート(必要に応じて)
+3. `2027/.env` に新しい `GEMINI_API_KEY` / `PUBLIC_BASE_URL` を設定。
+
+ドメインルール(ライフ・判定値・エンディング分岐)は年を通じて変わらない前提で、そのまま再利用できる。
