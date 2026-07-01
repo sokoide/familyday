@@ -283,17 +283,38 @@ curl localhost:8080/api/result/<endingId>
 
 ## テスト・静的解析
 
-```bash
-cd 2026/server
+リポジトリルートの **Makefile** で一元管理。主なターゲット:
 
-go test ./...                                                    # 単体テスト(domain/usecase/presentation)
-go vet ./...                                                     # 静的解析
-bash /Users/scott/.claude-glm/skills/cleanarch-master/scripts/check.sh ./internal/...  # Clean Architecture 依存方向
+```bash
+make                  # build + unit test(既定・ネットワーク不要)
+make build            # フロント+サーバをビルド
+make build-bin        # サーババイナリを server/bin/familyday へ
+make unit             # ユニットテスト(domain/usecase/presentation、ネットワーク不要)
+make integration      # E2E 統合テスト(実Gemini/Imagen使用・下記参照)
+make test-all         # unit + integration
+make vet / make fmt   # 静的解析 / フォーマット
+make check            # Clean Architecture 依存方向チェック
+make run [PORT=8080]  # サーバ起動(2026/.env を読む)
+make dev              # フロント開発サーバ(HMR・APIは :8080 へプロキシ)
+make help             # 全ターゲット一覧
 ```
 
-- Domain: 純粋関数のテーブル駆動テスト(モック不要)
-- UseCases: フェイクポートでオーケストレーションを検証
-- Presentation: UseCase をスタブ化し、エラー→HTTPステータス変換を検証
+### ユニットテスト(ネットワーク不要・CI安全)
+
+- **Domain**: 純粋関数のテーブル駆動テスト(モック不要)
+- **UseCases**: フェイクポートでオーケストレーションを検証
+- **Presentation**: UseCase をスタブ化し、リクエスト検証とエラー→HTTPステータス変換を検証
+
+### 統合テスト(実API)
+
+`2026/server/test/integration/`(`//go:build integration` タグ付き)。`app.BuildMux` で本番と同じワイヤリングの HTTP サーバを `httptest` で立て、実際の Gemini/Imagen を呼んで判定〜エンディング生成〜結果取得・画像ファイル実体化まで検証する。
+
+```bash
+GEMINI_API_KEY=xxx make integration
+```
+
+- `GEMINI_API_KEY` が未設定の場合は各テストが **skip** する(ネットワーク不要の CI を落とさない)。
+- Imagen は時間/失敗ゆらぎがあるため、画像未書き出し時は当該ケースを skip 扱いにして全体は緑を保つ。
 
 ---
 
