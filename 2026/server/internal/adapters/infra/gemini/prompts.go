@@ -90,7 +90,7 @@ func judgeSystemPrompt(stage domain.Stage, lang domain.Lang) string {
 
 【出力】JSONのみ。各フィールドの意味:
 - message: %s で、子供向けストーリー一文(30字/30 words 以内)。
-- reason: 判定の理由を子供にも分かるように短く(30字/30 words 以内)。なぜ Great/Good/Bad になったか、ライフが減ったか減らなかったかにも触れること。(Good でライフが減る場合は「工夫の余地があった」等、Bad の場合は「やり方とちがう」等、Great の場合は「うまくできた」等)。
+- reason: 判定の理由を子供にも分かるように短く(30字/30 words 以内)。なぜ Great/Good/Bad になったかを説明すること(例: Good なら「工夫の余地があった」、Bad なら「やり方とちがう」、Great なら「うまくできた」等)。※ライフやダメージの話は絶対に書かないこと(ライフの増減は別途決まるので、reason で触れると矛盾する)。
 `, stage.Title, stage.Situation, indent(stage.SuccessSpec), lang.Name())
 }
 

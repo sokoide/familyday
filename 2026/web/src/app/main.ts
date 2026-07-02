@@ -197,6 +197,10 @@ async function main(): Promise<void> {
     els.judgeMsg.hidden = true;
     els.interim.textContent = "";
     els.manualInput.value = "";
+    // マクラベルも「押して話す」に戻す(判定中から次ステージ遷移時に残るのを防ぐ)
+    if (speech.isSupported()) {
+      els.micLabel.textContent = m.input.micLabel;
+    }
     setInputsEnabled(true);
   }
 
