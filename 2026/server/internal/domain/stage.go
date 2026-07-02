@@ -35,10 +35,10 @@ func (s StageID) IsLast() bool { return s == StageDragon }
 
 // Stage は1ステージの描写メタ。成功条件は LLM 審判プロンプトに渡す基準。
 type Stage struct {
-	ID             StageID
-	Title          string // 表示名
-	Situation      string // 状況描写(子供向け)
-	Goal           string // 目的(画面表示用)
-	SuccessSpec    string // 審判基準(LLM へ渡す成功条件の自然言語仕様)
-	NeedsDragonRoute bool  // stage3 は route 判定が必要
+	ID               StageID
+	Title            string // 表示名
+	Situation        string // 状況描写(子供向け)
+	Goal             string // 目的(画面表示用)
+	SuccessSpec      string // 審判基準(LLM へ渡す成功条件の自然言語仕様)
+	NeedsDragonRoute bool   // stage3 は route 判定が必要
 }

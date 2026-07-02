@@ -40,7 +40,7 @@ func (s *stubImg) Generate(ctx context.Context, t domain.EndingType, r domain.Dr
 	return usecase.Image{}, nil
 }
 func (s *stubRepo) Save(ctx context.Context, e domain.Ending, img usecase.Image) error { return nil }
-func (s *stubRepo) Load(ctx context.Context, id string) (domain.Ending, error)          { return s.e, s.err }
+func (s *stubRepo) Load(ctx context.Context, id string) (domain.Ending, error)         { return s.e, s.err }
 
 type fakeLimiter struct{ allow bool }
 type fakeID struct{ id string }

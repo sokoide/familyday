@@ -11,8 +11,8 @@ type JudgeRequest struct {
 }
 
 type JudgeResponse struct {
-	Verdict    string `json:"verdict"`     // Great|Good|Bad
-	Route      string `json:"route"`       // stage3 のみ defeat|befriend、他は ""
+	Verdict    string `json:"verdict"` // Great|Good|Bad
+	Route      string `json:"route"`   // stage3 のみ defeat|befriend、他は ""
 	Message    string `json:"message"`
 	LivesDelta int    `json:"livesDelta"`
 	Advance    bool   `json:"advance"`

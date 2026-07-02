@@ -7,8 +7,8 @@ type Verdict string
 
 const (
 	VerdictGreat Verdict = "Great" // 大成功: ノーダメージで次のステージへ
-	VerdictGood Verdict = "Good"  // 成功: 次へ進むがライフ -1
-	VerdictBad  Verdict = "Bad"   // 失敗: ライフ -1 で同ステージリトライ
+	VerdictGood  Verdict = "Good"  // 成功: 次へ進むがライフ -1
+	VerdictBad   Verdict = "Bad"   // 失敗: ライフ -1 で同ステージリトライ
 )
 
 func ParseVerdict(s string) (Verdict, error) {

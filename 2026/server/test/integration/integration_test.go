@@ -5,8 +5,11 @@
 // API エンドポイント経由で判定〜エンディング生成までを検証する。
 //
 // 実行:
+//
 //	GEMINI_API_KEY=xxx make integration
+//
 // または
+//
 //	GEMINI_API_KEY=xxx go test -tags integration ./...
 //
 // GEMINI_API_KEY が未設定の場合はスキップする(ネットワーク不要の CI で落とさないため)。

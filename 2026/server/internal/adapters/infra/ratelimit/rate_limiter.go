@@ -9,9 +9,9 @@ import (
 
 // Limiter は sliding-window 風のメモリカウンタ(分単位)。
 type Limiter struct {
-	mu       sync.Mutex
-	windows  map[string][]time.Time
-	now      func() time.Time
+	mu      sync.Mutex
+	windows map[string][]time.Time
+	now     func() time.Time
 }
 
 func New() *Limiter {

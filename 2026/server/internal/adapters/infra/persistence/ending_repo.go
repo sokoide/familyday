@@ -15,8 +15,8 @@ import (
 // EndingRepo は1エンディング=1JSONファイル(+ 画像ファイル)で保存する。
 // 1ファイル1エントリなので3並列書き込みでも競合しない。
 type EndingRepo struct {
-	dir        string // メタJSON格納先
-	imageDir   string // 画像ファイル格納先
+	dir      string // メタJSON格納先
+	imageDir string // 画像ファイル格納先
 }
 
 func NewEndingRepo(dir, imageDir string) (*EndingRepo, error) {

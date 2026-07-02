@@ -18,11 +18,11 @@ type JudgeInput struct {
 
 // JudgeOutput は判定結果。lives 更新はフロント権威だが、整合用に delta/advance も返す。
 type JudgeOutput struct {
-	Verdict   domain.Verdict
-	Route     domain.DragonRoute // stage3 以外は空文字
-	Message   string
-	LivesDelta int   // -1 / 0
-	Advance   bool   // 次ステージへ進めるか
+	Verdict    domain.Verdict
+	Route      domain.DragonRoute // stage3 以外は空文字
+	Message    string
+	LivesDelta int  // -1 / 0
+	Advance    bool // 次ステージへ進めるか
 }
 
 const (

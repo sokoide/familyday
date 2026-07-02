@@ -47,9 +47,9 @@ func TestDecideEnding(t *testing.T) {
 		route   DragonRoute
 		want    EndingType
 	}{
-		{3, true, RouteDefeat, EndingGreat},    // 満ライフクリア
-		{2, true, RouteBefriend, EndingGreat},  // 友好
-		{2, true, RouteDefeat, EndingSuccess},  // 1-2で撃退
+		{3, true, RouteDefeat, EndingGreat},   // 満ライフクリア
+		{2, true, RouteBefriend, EndingGreat}, // 友好
+		{2, true, RouteDefeat, EndingSuccess}, // 1-2で撃退
 		{1, true, RouteDefeat, EndingSuccess},
 		{0, true, RouteDefeat, EndingGameOver}, // ライフ0
 		{3, false, RouteNone, EndingGameOver},  // 未クリア

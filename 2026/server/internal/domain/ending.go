@@ -15,9 +15,9 @@ const (
 type DragonRoute string
 
 const (
-	RouteDefeat  DragonRoute = "defeat"  // ドラゴンを打ち倒した
+	RouteDefeat   DragonRoute = "defeat"   // ドラゴンを打ち倒した
 	RouteBefriend DragonRoute = "befriend" // ドラゴンと友だちになった
-	RouteNone    DragonRoute = ""        // stage1/2 または未クリア
+	RouteNone     DragonRoute = ""         // stage1/2 または未クリア
 )
 
 func ParseDragonRoute(s string) (DragonRoute, error) {

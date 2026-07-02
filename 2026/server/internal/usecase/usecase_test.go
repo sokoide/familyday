@@ -52,9 +52,9 @@ func (f *fakeRepo) Load(ctx context.Context, id string) (domain.Ending, error) {
 	}
 	return domain.Ending{}, domain.ErrNotFound
 }
-func (f *fakeLimiter) Allow(ctx context.Context, key string, lim int) bool  { return f.allow }
-func (f *fakeID) NewID() string                                             { return f.id }
-func (f *fakeClock) NowISO() string                                         { return f.ts }
+func (f *fakeLimiter) Allow(ctx context.Context, key string, lim int) bool { return f.allow }
+func (f *fakeID) NewID() string                                            { return f.id }
+func (f *fakeClock) NowISO() string                                        { return f.ts }
 
 // --- JudgeUseCase ---
 
