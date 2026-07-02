@@ -15,6 +15,7 @@ export interface JudgeResult {
   verdict: Verdict;
   route: DragonRoute;
   message: string;
+  reason: string; // 判定理由(子供向け)
   livesDelta: number;
   advance: boolean;
 }

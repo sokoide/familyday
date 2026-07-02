@@ -36,6 +36,7 @@ export interface Messages {
   input: {
     micLabel: string;
     listening: string;
+    judging: string; // 判定送信中のラベル
     micUnsupported: string;
     manualSummary: string;
     manualPlaceholder: string;
@@ -52,6 +53,11 @@ export interface Messages {
     noSpeech: string;
     unsupported: string;
     generic: string;
+    noReason: string; // 理由が空の時のフォールバック
+    lifeDown: string; // "ハート -1"
+    lifeNone: string; // "ハート ±0"
+    historyTitle: string; // 履歴エリアのタイトル
+    historyEmpty: string; // 履歴がない時の表示
   };
 
   ending: {
@@ -80,15 +86,15 @@ const ja: Messages = {
   lang: "ja",
   langName: "日本語",
   intro: {
-    title: "🐉 ドラゴン城の秘宝",
+    title: "🐉 トムハラゴン城の秘宝",
     subtitle: "〜 AI魔法のゲームブック 〜",
     lines: [
-      "あなたは ゆうしゃ。おひめさまを たすけるため、ドラゴン城へ むかいます。",
-      "こえで「じゅもん」を となえて、3つの しれんを つっぱしれよう!",
+      "あなたは ゆうしゃ。おひめさまを たすけるため、トムハラゴン城へ むかいます。",
+      "こえで「じゅもん（短い文）」を となえて、3つの しれんを とっぱしよう!"
     ],
     hint: "ハートが 3つ あります。なくならないように きをつけてね!",
     start: "ぼうけんを はじめる",
-    pickLang: "ことばを えらぶ",
+    pickLang: "ことばを えらぶ"
   },
   hud: { livesEmpty: "ハート なし" },
   stage: {
@@ -96,28 +102,32 @@ const ja: Messages = {
     stages: [
       {
         title: "城門のゴーレム",
-        situation: "ドラゴン城の まえに とうちゃくした。でも、おおきくて こわい「もんばんのゴーレム」が とおせんぼしている!",
-        goal: "ゴーレムを どかす、または とおりぬける じゅもんを となえよう!",
+        situation:
+          "ドラゴン城の まえに とうちゃくした。でも、おおきくて こわい「もんばんのゴーレム」が とおせんぼしている!",
+        goal: "ゴーレムを どかす、または とおりぬける じゅもんを となえよう!"
       },
       {
         title: "炎のトラップ",
-        situation: "城の なかに はいると、つうろが げれきの ほのおで つつまれていて すすめない!",
-        goal: "ほのおを けす、または あんぜんに とびこえる じゅもんを となえよう!",
+        situation:
+          "城の なかに はいると、つうろが げれきの ほのおで つつまれていて すすめない!",
+        goal: "ほのおを けす、または あんぜんに とびこえる じゅもんを となえよう!"
       },
       {
-        title: "ドラゴンとの さいしゅうけっせん",
-        situation: "さいじょうかいで おひめさまを はっけん!でも、おこった ドラゴンが おそいかかってきた!",
-        goal: "ドラゴンを たおす、または なかよくする じゅもんを となえよう!",
-      },
-    ],
+        title: "トムハラゴンとの さいしゅうけっせん",
+        situation:
+          "さいじょうかいで おひめさまを はっけん!でも、おこった ドラゴンが おそいかかってきた!",
+        goal: "ドラゴンを たおす、または なかよくする じゅもんを となえよう!"
+      }
+    ]
   },
   input: {
     micLabel: "押して はなす",
     listening: "ききとりちゅう…",
+    judging: "しんぱんちゅう…",
     micUnsupported: "文字で にゅうりょく",
     manualSummary: "こえが とおらないとき：文字で にゅうりょく",
     manualPlaceholder: "じゅもんを かいてね",
-    manualBtn: "となえる",
+    manualBtn: "となえる"
   },
   judge: {
     bad: "おしい!もういちど かんがえて みよう! 💡",
@@ -125,53 +135,63 @@ const ja: Messages = {
     greatSuffix: "✨ つぎのへやへ!",
     noVoice: "きこえなかったよ!もういちど はなしてね 🎤",
     netError: "ちょっと つうしんエラー。もういちど ためしてね!",
-    micDenied: "マイクの きょかが いません。したの じでにゅうりょくを つかってね。",
+    micDenied:
+      "マイクの きょかが いません。したの じでにゅうりょくを つかってね。",
     noSpeech: "こえが きこえなかったよ!もういちど!",
-    unsupported: "このブラウザでは こえが つかえません。じでにゅうりょくしてね。",
+    unsupported:
+      "このブラウザでは こえが つかえません。じでにゅうりょくしてね。",
     generic: "えらーが おきました。もういちど!",
+    noReason: "がんばりを おしえてくれたよ!",
+    lifeDown: "ハート -1",
+    lifeNone: "ハート へらず!",
+    historyTitle: "📜 これまでの ぼうけん",
+    historyEmpty: "まだ ぼうけんを はじめてないよ!"
   },
   ending: {
     titles: {
       great: "🏆 でんせつの ゆうしゃ エンド!",
       success: "✨ がんばった ゆうしゃ エンド!",
-      gameover: "😢 また ちょうせんしてね エンド",
+      gameover: "😢 また ちょうせんしてね エンド"
     },
     fallbackEmoji: { great: "🏆", success: "✨", gameover: "😢" },
     shortLabel: {
       great: "でんせつの ゆうしゃ",
       success: "がんばった ゆうしゃ",
-      gameover: "また ちょうせんしてね",
+      gameover: "また ちょうせんしてね"
     },
     fallbackTitle: "ぼうけん おわり!",
-    fallbackStory: "でんわが ちょっと つながりにくいようです。スタッフに きいてね。",
+    fallbackStory:
+      "でんわが ちょっと つながりにくいようです。スタッフに きいてね。",
     netErrorTitle: "ぼうけん おわり!",
-    netErrorStory: "でんわが ちょっと つながりにくいようです。スタッフに きいてね。",
+    netErrorStory:
+      "でんわが ちょっと つながりにくいようです。スタッフに きいてね。",
     qrNote: "スマホの カメラで よみとってね!",
     emailLabel: "メールで 送る",
     emailPlaceholder: "your@email.com",
     emailBtn: "メールで 送る",
     emailSubject: "ドラゴン城の秘宝・あなたのぼうけんのきろく",
-    emailBody: "ゆうしゃの きろくは こちら!\n(このURLは1しゅうかんだけ みられます)",
+    emailBody:
+      "ゆうしゃの きろくは こちら!\n(このURLは1しゅうかんだけ みられます)",
     resultUrlLabel: "",
     restart: "もういちど",
     loading: "読み込み中…",
-    notFound: "きろくが みつかりませんでした",
-  },
+    notFound: "きろくが みつかりませんでした"
+  }
 };
 
 const en: Messages = {
   lang: "en",
   langName: "English",
   intro: {
-    title: "🐉 Dragon Castle's Secret",
+    title: "🐉 Tom Harragon Castle's Secret",
     subtitle: "— AI Magic Gamebook —",
     lines: [
       "You are a hero, heading to the Dragon Castle to save the princess.",
-      "Cast a spell with your voice and brave 3 challenges!",
+      "Cast a spell with your voice and brave 3 challenges!"
     ],
     hint: "You have 3 hearts. Don't lose them all!",
     start: "Start the adventure",
-    pickLang: "Choose language",
+    pickLang: "Choose language"
   },
   hud: { livesEmpty: "No hearts" },
   stage: {
@@ -179,28 +199,32 @@ const en: Messages = {
     stages: [
       {
         title: "The Castle Gate Golem",
-        situation: "You reach the Dragon Castle. But a huge, scary Gate Golem blocks the way!",
-        goal: "Cast a spell to move the golem or slip past it!",
+        situation:
+          "You reach the Tom Harragon Castle. But a huge, scary Gate Golem blocks the way!",
+        goal: "Cast a spell to move the golem or slip past it!"
       },
       {
         title: "The Fire Trap",
-        situation: "Inside the castle, the hallway is wrapped in fierce flames. You can't go forward!",
-        goal: "Cast a spell to put out the fire or leap over it safely!",
+        situation:
+          "Inside the castle, the hallway is wrapped in fierce flames. You can't go forward!",
+        goal: "Cast a spell to put out the fire or leap over it safely!"
       },
       {
-        title: "The Final Dragon Battle",
-        situation: "On the top floor you find the princess! But an angry dragon attacks!",
-        goal: "Cast a spell to defeat the dragon or befriend it!",
-      },
-    ],
+        title: "The Final Tom Harragon Battle",
+        situation:
+          "On the top floor you find the princess! But an angry dragon attacks!",
+        goal: "Cast a spell to defeat the dragon or befriend it!"
+      }
+    ]
   },
   input: {
     micLabel: "Tap & speak",
     listening: "Listening…",
+    judging: "Judging…",
     micUnsupported: "Type it instead",
     manualSummary: "If voice doesn't work: type it",
     manualPlaceholder: "Type your spell",
-    manualBtn: "Cast",
+    manualBtn: "Cast"
   },
   judge: {
     bad: "So close! Think and try again! 💡",
@@ -212,18 +236,23 @@ const en: Messages = {
     noSpeech: "I didn't hear anything. Try again!",
     unsupported: "Voice isn't available in this browser. Please type.",
     generic: "Something went wrong. Try again!",
+    noReason: "You gave it a try!",
+    lifeDown: "heart -1",
+    lifeNone: "no damage!",
+    historyTitle: "📜 Your adventure so far",
+    historyEmpty: "Start your adventure!"
   },
   ending: {
     titles: {
       great: "🏆 Legendary Hero Ending!",
       success: "✨ Brave Hero Ending!",
-      gameover: "😢 Try Again Ending",
+      gameover: "😢 Try Again Ending"
     },
     fallbackEmoji: { great: "🏆", success: "✨", gameover: "😢" },
     shortLabel: {
       great: "Legendary Hero",
       success: "Brave Hero",
-      gameover: "Try Again",
+      gameover: "Try Again"
     },
     fallbackTitle: "Adventure Over!",
     fallbackStory: "The connection seems weak. Please ask the staff.",
@@ -234,12 +263,13 @@ const en: Messages = {
     emailPlaceholder: "your@email.com",
     emailBtn: "Send email",
     emailSubject: "Dragon Castle — your adventure record",
-    emailBody: "Here is your hero's record!\n(This link is available for one week.)",
+    emailBody:
+      "Here is your hero's record!\n(This link is available for one week.)",
     resultUrlLabel: "",
     restart: "Play again",
     loading: "Loading…",
-    notFound: "Record not found",
-  },
+    notFound: "Record not found"
+  }
 };
 
 export const dictionaries: Record<Lang, Messages> = { ja, en };

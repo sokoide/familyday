@@ -21,8 +21,9 @@ type JudgeOutput struct {
 	Verdict    domain.Verdict
 	Route      domain.DragonRoute // stage3 以外は空文字
 	Message    string
-	LivesDelta int  // -1 / 0
-	Advance    bool // 次ステージへ進めるか
+	Reason     string // 判定理由(子供向け)
+	LivesDelta int    // -1 / 0
+	Advance    bool   // 次ステージへ進めるか
 }
 
 const (
@@ -72,6 +73,7 @@ func (u *JudgeUseCase) Judge(ctx context.Context, in JudgeInput) (JudgeOutput, e
 		Verdict:    res.Verdict,
 		Route:      res.Route,
 		Message:    res.Message,
+		Reason:     res.Reason,
 		LivesDelta: res.Verdict.LivesDelta(),
 		Advance:    res.Verdict.Advances(),
 	}, nil

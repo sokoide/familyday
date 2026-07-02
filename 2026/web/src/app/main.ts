@@ -109,6 +109,9 @@ async function main(): Promise<void> {
     stageSituation: $("stage-situation"),
     stageGoal: $("stage-goal"),
     judgeMsg: $("judge-message"),
+    judgeReason: $("judge-reason") as HTMLElement,
+    historyTitle: $("history-title") as HTMLElement,
+    history: $("history") as HTMLUListElement,
     mic: $("btn-mic") as HTMLButtonElement,
     micLabel: document.querySelector<HTMLElement>(".mic-label")!,
     interim: $("interim"),
@@ -127,6 +130,8 @@ async function main(): Promise<void> {
 
   els.lives.textContent = hearts(state.lives);
   els.micLabel.textContent = m.input.micLabel;
+  els.historyTitle.textContent = m.judge.historyTitle;
+  els.history.textContent = m.judge.historyEmpty;
 
   if (!speech.isSupported()) {
     els.mic.disabled = true;
@@ -141,9 +146,15 @@ async function main(): Promise<void> {
     localStorage.setItem(LANG_KEY, lang);
     applyI18n(m);
     if (state.phase === "stage") renderStage();
+    els.historyTitle.textContent = m.judge.historyTitle;
+    if (els.history.children.length === 0) {
+      els.history.textContent = m.judge.historyEmpty;
+    }
     if (!speech.isSupported()) {
       els.micLabel.textContent = m.input.micUnsupported;
-    } else if (!state.isProcessing) {
+    } else if (state.isProcessing) {
+      els.micLabel.textContent = m.input.judging;
+    } else {
       els.micLabel.textContent = m.input.micLabel;
     }
   }
@@ -194,13 +205,57 @@ async function main(): Promise<void> {
     els.judgeMsg.hidden = false;
   }
 
+  // 判定理由トースト(5秒でフェードアウト)。空欄時はフォールバック文。
+  function showReason(res: JudgeResult, spoken: string): void {
+    const reason = res.reason?.trim() || m.judge.noReason;
+    const verdictLabel = res.verdict; // Great / Good / Bad
+    const lifeLabel = res.livesDelta < 0 ? m.judge.lifeDown : m.judge.lifeNone;
+    els.judgeReason.innerHTML = "";
+    const head = document.createElement("div");
+    head.className = "reason-head";
+    head.textContent = `${verdictLabel}（${lifeLabel}）`;
+    const body = document.createElement("div");
+    body.className = "reason-body";
+    body.textContent = `💡 ${reason}`;
+    els.judgeReason.append(head, body);
+    els.judgeReason.hidden = false;
+    // アニメ: 表示 → 5秒後にフェード
+    els.judgeReason.classList.remove("fade-out");
+    void els.judgeReason.offsetWidth; // リフロー強制で再アニメ対応
+    window.setTimeout(() => {
+      els.judgeReason.classList.add("fade-out");
+      window.setTimeout(() => {
+        els.judgeReason.hidden = true;
+      }, 600);
+    }, 5000);
+    void spoken; // (spoken は履歴で使用)
+  }
+
+  // 履歴へ「[ステージN] 発言 → 判定(ライフ変化): 理由」を prepend。
+  function addHistory(stageIndex: number, spoken: string, res: JudgeResult): void {
+    // 初回: 空表示をクリア
+    if (els.history.textContent === m.judge.historyEmpty) {
+      els.history.textContent = "";
+    }
+    const li = document.createElement("li");
+    li.className = `history-item verdict-${res.verdict.toLowerCase()}`;
+    const stageNo = stageIndex + 1;
+    const lifeLabel = res.livesDelta < 0 ? `(${m.judge.lifeDown})` : `(${m.judge.lifeNone})`;
+    const reason = res.reason?.trim() || m.judge.noReason;
+    const quote = spoken.length > 30 ? spoken.slice(0, 30) + "…" : spoken;
+    li.textContent = `[${m.stage.prefix(stageNo).trim()}] "${quote}" → ${res.verdict} ${lifeLabel}: ${reason}`;
+    els.history.prepend(li);
+  }
+
   // 判定API呼び出し共通
   async function submitInput(text: string): Promise<void> {
     const input = text.trim();
     if (!input || state.isProcessing) return;
     state = { ...state, isProcessing: true };
     setInputsEnabled(false);
-    els.interim.textContent = "";
+    // 認識した文字をそのまま表示して「判定中」を明示(空クリアしない)
+    els.interim.textContent = input;
+    els.micLabel.textContent = m.input.judging;
 
     const stageId = STAGES[state.stageIndex].id;
     try {
@@ -210,9 +265,10 @@ async function main(): Promise<void> {
         input,
         lang: state.lang,
       });
-      onJudge(res);
+      onJudge(res, input);
     } catch {
       showJudge(m.judge.netError);
+      els.micLabel.textContent = m.input.micLabel;
       setInputsEnabled(true);
       state = { ...state, isProcessing: false };
     }
@@ -223,9 +279,13 @@ async function main(): Promise<void> {
     state = { ...state, isProcessing: false };
   }
 
-  function onJudge(res: JudgeResult): void {
+  function onJudge(res: JudgeResult, spoken: string): void {
     state = applyJudge(state, res);
     els.lives.textContent = hearts(state.lives);
+
+    // 判定理由をトースト表示(5秒) + 履歴へ蓄積
+    showReason(res, spoken);
+    addHistory(state.stageIndex, spoken, res);
 
     if (state.phase === "ending") {
       releaseProcessing();
@@ -234,6 +294,8 @@ async function main(): Promise<void> {
     }
     if (res.verdict === "Bad") {
       showJudge(m.judge.bad);
+      els.interim.textContent = "";
+      els.micLabel.textContent = m.input.micLabel;
       releaseProcessing();
       setInputsEnabled(true);
     } else if (res.verdict === "Good") {
@@ -366,6 +428,9 @@ async function main(): Promise<void> {
     els.timer.textContent = formatTime(300);
     els.emailInput.value = "";
     els.emailBtn.disabled = true;
+    // 履歴・トースト・判定メッセージをクリア
+    els.history.textContent = m.judge.historyEmpty;
+    els.judgeReason.hidden = true;
     showPhase("intro");
   });
 }

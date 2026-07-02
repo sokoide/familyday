@@ -78,7 +78,7 @@ func (g *JudgeGateway) Judge(ctx context.Context, stage domain.Stage, input stri
 			route = domain.RouteDefeat // 不正時は安全側に倒す
 		}
 	}
-	return usecase.JudgeResult{Verdict: v, Route: route, Message: j.Message}, nil
+	return usecase.JudgeResult{Verdict: v, Route: route, Message: j.Message, Reason: j.Reason}, nil
 }
 
 // firstText はレスポンスの最初のテキストを取り出す。空なら error。

@@ -38,6 +38,9 @@
 
         <div id="judge-message" class="judge-msg" hidden></div>
 
+        <!-- 判定理由トースト(5秒でフェードアウト) -->
+        <div id="judge-reason" class="judge-reason" hidden></div>
+
         <div class="input-area">
           <button id="btn-mic" class="mic-btn" aria-label="voice input">
             <span class="mic-icon">🎤</span>
@@ -49,6 +52,12 @@
             <textarea id="manual-input" rows="2"></textarea>
             <button id="btn-manual" class="small-btn"></button>
           </details>
+        </div>
+
+        <!-- 判定履歴(下に蓄積・スクロール可能) -->
+        <div class="history-area">
+          <h3 id="history-title" class="history-title"></h3>
+          <ul id="history" class="history-list"></ul>
         </div>
       </section>
 

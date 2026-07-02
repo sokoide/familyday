@@ -55,6 +55,7 @@ func (h *Handler) Judge(w http.ResponseWriter, r *http.Request) {
 		Verdict:    string(out.Verdict),
 		Route:      string(out.Route),
 		Message:    out.Message,
+		Reason:     out.Reason,
 		LivesDelta: out.LivesDelta,
 		Advance:    out.Advance,
 	})

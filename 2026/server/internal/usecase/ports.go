@@ -13,6 +13,7 @@ type JudgeResult struct {
 	Verdict domain.Verdict
 	Route   domain.DragonRoute
 	Message string
+	Reason  string // 判定理由(子供向け)。ライフ変化の根拠を示す
 }
 
 // LLMJudgeGateway はステージ判定を行う外部 LLM の能力ポート。

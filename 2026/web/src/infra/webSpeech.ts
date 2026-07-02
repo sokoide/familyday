@@ -56,6 +56,7 @@ export class WebSpeechRecognizer implements SpeechRecognizer {
       rec.maxAlternatives = 1;
 
       let finalText = "";
+      let interimText = ""; // 直近の interim を保持(onend 時のフォールバック用)
       let settled = false;
       const settle = (fn: () => void) => {
         if (settled) return;
@@ -74,10 +75,15 @@ export class WebSpeechRecognizer implements SpeechRecognizer {
             interim += r[0].transcript;
           }
         }
-        if (interim) onInterim(interim);
+        if (interim) {
+          interimText = interim; // 末確定でも保持しておく
+          onInterim(interim);
+        }
       };
       rec.onerror = (e) => settle(() => reject(new Error(`speech-${e.error}`)));
-      rec.onend = () => settle(() => resolve(finalText.trim()));
+      // onend で isFinal が来ていないことがある(短い発話・間が空いた等)。
+      // その場合は直近の interim を確定結果として採用し、文字を捨てない。
+      rec.onend = () => settle(() => resolve((finalText || interimText).trim()));
 
       // 8秒で強制停止(暴走防止)。停止で onend が発火し settle される。
       const to = setTimeout(() => {
