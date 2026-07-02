@@ -13,6 +13,7 @@
 - [ゲーム進行と状態遷移](#ゲーム進行と状態遷移)
 - [ディレクトリ構成](#ディレクトリ構成)
 - [API仕様](#api仕様)
+- [コンテンツ生成と画像の保存・配信](#コンテンツ生成と画像の保存配信)
 - [クイックスタート(ローカル開発)](#クイックスタートローカル開発)
 - [環境変数](#環境変数)
 - [動作確認(curl)](#動作確認curl)
@@ -183,6 +184,7 @@ stateDiagram-v2
 // res 200
 { "verdict": "Great", "route": "", "message": "...", "livesDelta": 0, "advance": true }
 ```
+
 - `verdict`: `Great` | `Good` | `Bad`。`route` は `stage3` のみ `defeat`|`befriend`。
 - `input` は1..200文字(空・超過は `400 INVALID_INPUT`)。
 
@@ -207,9 +209,132 @@ stateDiagram-v2
 
 ---
 
+## コンテンツ生成と画像の保存・配信
+
+ゲーム中の判定メッセージ、エンディングのストーリー文、エンディング画像は **すべてサーバ(Composition Root から注入された Gemini adapter)が生成** します。フロントは生成ロジックを持たず、API の結果を受け取って表示するだけです。API キーもサーバのみが保持します。
+
+### 生成する3種類のコンテンツとモデル
+
+| コンテンツ | 生成タイミング | モデル(env) | 実装(adapter) |
+| --- | --- | --- | --- |
+| **判定メッセージ**(`verdict`/`message`) | `POST /api/judge` の都度 | `gemini-3.1-flash-lite`(`GEMINI_MODEL_JUDGE`) | `infra/gemini/client.go` `JudgeGateway` |
+| **ストーリー文**(`story`) | `POST /api/ending` 1回のみ | `gemini-3.1-flash-lite`(`GEMINI_MODEL_STORY`) | `infra/gemini/story_generator.go` `StoryGenerator` |
+| **エンディング画像**(PNG) | `POST /api/ending` 1回のみ | `gemini-3.1-flash-lite-image`(Nano Banana Lite・`GEMINI_MODEL_IMAGE`) | `infra/gemini/imagen.go` `ImageGenerator` |
+
+- **プロンプトはすべて固定テンプレート**(`infra/gemini/prompts.go`)。ユーザー入力(呪文)は判定の `contents[].user` パートに置くだけで、**画像プロンプトには絶対に混ぜない**(プロンプトインジェクション対策)。
+- **判定**は JSON schema 付きの構造化出力(`verdict` enum + `message`)。セーフティブロック/空応答は Bad 判定に倒して体験を継続させます。
+- **ストーリー**はエンディング種(`great`/`success`/`gameover`)と言語(`ja`/`en`)で1文を生成。失敗時は usecase が内蔵フォールバック文に差し替えます(`ending.go` `fallbackStory`)。
+- **画像**は `endingType` × `route` からテンプレートを選び `generate_content` で1枚生成。レスポンスの `InlineData`(`Blob`)から画像を取り出します(`firstInlineImage`)。>Imagen 系は 2026-08-17 廃止のため未使用<。
+
+### 生成から配信までの全体フロー
+
+```mermaid
+flowchart TB
+  BR[ブラウザ<br/>POST /api/ending<br/>lives/finalAction/cleared/lang]
+
+  subgraph SRV[Go サーバ]
+    H[Handler<br/>presentation/http]
+    UC[EndingUseCase<br/>ending.go]
+    SG[StoryGenerator<br/>gemini/story_generator]
+    IG[ImageGenerator<br/>gemini/imagen]
+    RP[EndingRepo<br/>persistence/ending_repo]
+    FS[(ローカル FS<br/>data/endings/*.json<br/>data/generated/*.png)]
+    ROUTE["/img/ → safeFileServer<br/>/r/{id} → SPA fallback"]
+  end
+
+  GEM[(Google Gemini API)]
+
+  BR -->|JSON| H
+  H -->|Resolve| UC
+  UC -->|"Generate(story)"| SG --> GEM
+  UC -->|"Generate(image)"| IG --> GEM
+  UC -->|"Save(ending, img)"| RP --> FS
+  UC -->|"EndingOutput<br/>{endingId, story, imageFile}"| H
+  H -->|絶対URL化<br/>imageUrl=/img/{id}.png<br/>resultUrl=/r/{id}| BR
+
+  BR -.->|GET /img/{id}.png| ROUTE
+  ROUTE --> FS
+  BR -.->|GET /r/{id}| ROUTE
+```
+
+### テキスト(ストーリー)の生成フロー
+
+1. `Handler.Ending`(`handler.go`)が `EndingUseCase.Resolve` を呼ぶ。
+2. usecase は `domain.DecideEnding(lives, cleared, route)` でエンディング種を決定し、`StoryGenerator.Generate(type, lives, route, lang)` を呼ぶ。
+3. adapter が `storyPrompt` + システム指示「子供向け絵本の作家」で `gemini-3.1-flash-lite` を呼び、最初のテキストパートを返す(`firstText`)。
+4. **失敗時(通信エラー・空応答)は usecase が `fallbackStory` の固定文に差し替え**、エラーは上位へ伝播させない(体験継続優先)。
+5. ストーリーは `domain.Ending.Story` として JSON に保存され、`/api/ending` と `/api/result/{id}` の両レスポンスにそのまま載る。
+
+> 判定メッセージも同様に `JudgeGateway`→Gemini→`firstText`→JSON parse で生成され、`/api/judge` 応答の `message` として返ります(こちらは永続化されません)。
+
+### 画像の生成・リサイズ・保存フロー
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant UC as EndingUseCase
+  participant IG as ImageGenerator<br/>(gemini/imagen.go)
+  participant GEM as Gemini API<br/>(flash-lite-image)
+  participant RP as EndingRepo
+  participant FS as FS data/generated/
+
+  UC->>IG: Generate(endingType, route)
+  loop ImageCount 回(既定1)
+    IG->>GEM: generate_content(imagenPrompt,<br/>responseModalities=IMAGE,TEXT)
+    GEM-->>IG: InlineData(Blob, png)
+    IG->>IG: firstInlineImage()<br/>※失敗なら再試行
+  end
+  opt ImageSize != 1024
+    IG->>IG: resizeSquare(CatmullRom)<br/>size×size の PNG へ
+  end
+  IG-->>UC: Image{Bytes, image/png}
+  UC->>RP: Save(ending, img)
+  RP->>FS: {id}.png を書込み(0644)
+  RP->>FS: {id}.json(メタ)を書込み
+```
+
+- **プロンプト**: `imagenPrompt(endingType, route)`(`prompts.go`)。「子供向け絵本・パステル調・暴力表現なし」の共通接頭辞 + エンディング別のシーン描写。ユーザー入力は含まない。
+- **取得**: `generate_content` で `ResponseModalities=[IMAGE,TEXT]` を要求し、`firstInlineImage` が最初の `InlineData` を取り出す。
+- **リサイズ**(任意): `GEMINI_IMAGE_SIZE`(既定 `1024`)がモデルのネイティブ出力と一致する場合はリサイズなし。`512` 等に変えると生成後に `resizeSquare`(`golang.org/x/image/draw` CatmullRom)で size×size の PNG に変換する。他モデル移行時や縮小用途。リサイズ失敗時は元画像をそのまま使う(体験優先)。
+- **候補数**: `GEMINI_IMAGE_COUNT`(既定 `1`)。`>1` は複数回生成して最初の成功を採用するが**コストが N 倍**になる。失敗時のフォールバック効果狙い。
+- **保存**: `EndingRepo.Save` が画像を `data/generated/{id}.png` に書き、成功後にメタ JSON を `data/endings/{id}.json` に書く。パスは `filepath.Base` で正規化し**パストラバーサルを防止**。画像バイトが空(=生成失敗)の場合は画像ファイルを書かずメタのみ保存し、後述のフォールバック画像へ誘導する。
+- **失敗時ログ**: usecase は画像生成エラーを上位に伝播させない代わりに、`Logger` ポート経由でサーバログに原因(課金/クォータ等)を出力する(`StdLogger` が実装)。従来の握り潰しを改善した点。
+
+### 画像の配信と URL 構築
+
+- **絶対 URL**: `Handler` が `PUBLIC_BASE_URL` + `/img/{id}.png` を組み立てて `imageUrl` として返す(`imageURL` メソッド)。QR/メールで持ち帰るため絶対 URL が必須。
+- **配信ルート**: `app.BuildMux` が `/img/` を `safeFileServer(data/generated)` にマウント。`filepath.Base` でディレクトリ外を弾き、当該ディレクトリ配下の PNG だけを配信する。
+- **結果ページ**: `/r/{id}` は SPA フォールバック(`spaHandler`)で `index.html` を返し、フロントが `GET /api/result/{id}` でメタ(JSON)を取得して `imageUrl` を描画する。
+- **QR/メール**: `imageUrl` と `resultUrl` を QR(`ui/qr.ts`)と `mailto:`(`ui/share.ts`)で共有。サーバはアドレスを一切送受信・保存しない。
+
+### 画像生成失敗時のフォールバック(体験を止めない)
+
+画像生成は有料 API キーが必須で、無料ティアではクォータ 0 で失敗します(実APIで確認済み・`.ai-handoff.md` 参照)。そのため二重のフォールバックを用意しています。
+
+```mermaid
+flowchart LR
+  A["POST /api/ending"] --> UC{画像生成成功?}
+  UC -->|成功| SAVE["data/generated/{id}.png 書込み<br/>imageUrl=/img/{id}.png"]
+  UC -->|失敗| LOG["サーバログに原因出力<br/>画像未保存・メタのみ保存"]
+  SAVE --> RESP["res.imageUrl"]
+  LOG --> RESP
+  RESP --> BR["ブラウザ <img>"]
+  BR --> LOAD{画像読込成功?}
+  LOAD -->|成功| SHOW["生成画像を表示"]
+  LOAD -->|"onerror(404等)"| FB["fallbackImage()<br/>SVG data-URI 絵文字画像<br/>🏆 / ✨ / 😢 + ラベル"]
+  FB --> SHOW
+```
+
+- **サーバ側**: 画像生成失敗時は画像ファイルを書かず、`imageUrl` としては `/img/{id}.png`(存在しない)を返す。
+- **ブラウザ側**: `app/main.ts` が `<img>` の `onerror` を監視し、`ui/share.ts` の `fallbackImage(emoji, label)` が生成する **SVG data-URI**(絵文字 + 多言語ラベル)へ差し替える。ネットワーク/API 障害でも結果画面は必ず表示される。
+- **ストーリー**も同様に失敗時は `fallbackStory` の固定文になるため、テキスト・画像ともに「生成失敗 = 画面が壊れる」ことはない設計。
+
+---
+
 ## クイックスタート(ローカル開発)
 
 ### 前提
+
 - Go 1.26+ / Node 20+ / `make`(GNU Make)
 - Google AI Studio で発行した Gemini API キー
 
@@ -341,12 +466,10 @@ GEMINI_API_KEY=xxx make integration
 ```mermaid
 flowchart LR
   SEL[言語選択 ja/en] -->|localStorage| UI[messages.ts でUI切替]
-  SEL -->|lang 送信| API[/api/judge /api/ending]
+  SEL -->|lang 送信| API["/api/judge /api/ending"]
   API --> SRV[サーバ: 応答言語を切替]
   SRV --> GEM[Gemini: その言語で生成]
 ```
-
-
 
 - **APIキーはサーバのみ**。ブラウザには公開しない。
 - **プロンプトインジェクション対策**: ユーザー入力は `contents` の user パートに置き、システムプロンプトには埋め込まない。「指示は Bad」を明示。
