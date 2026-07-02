@@ -27,16 +27,20 @@ const endingLimit = 5 // 1キー 5回/分
 
 // EndingUseCase はエンディング種の決定→ストーリー生成→画像生成→永続化を指揮する。
 type EndingUseCase struct {
-	story  StoryGenerator
-	image  ImageGenerator
-	repo   EndingRepository
-	lim    RateLimiter
-	idgen  IDGenerator
-	clock  Clock
+	story StoryGenerator
+	image ImageGenerator
+	repo  EndingRepository
+	lim   RateLimiter
+	idgen IDGenerator
+	clock Clock
+	log   Logger
 }
 
-func NewEndingUseCase(s StoryGenerator, im ImageGenerator, r EndingRepository, l RateLimiter, id IDGenerator, c Clock) *EndingUseCase {
-	return &EndingUseCase{story: s, image: im, repo: r, lim: l, idgen: id, clock: c}
+func NewEndingUseCase(s StoryGenerator, im ImageGenerator, r EndingRepository, l RateLimiter, id IDGenerator, c Clock, log Logger) *EndingUseCase {
+	if log == nil {
+		log = NopLogger{}
+	}
+	return &EndingUseCase{story: s, image: im, repo: r, lim: l, idgen: id, clock: c, log: log}
 }
 
 func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID string) (EndingOutput, error) {
@@ -69,8 +73,12 @@ func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID s
 		story = fallbackStory(endingType, in.Lang)
 	}
 
-	// 画像生成(失敗時は空 Image → Presentation が fallback 静的画像へ)
+	// 画像生成(失敗時は空 Image → Presentation が fallback 静的画像へ)。
+	// エラーは上位へ伝播させないが、運用で原因(課金/クォータ等)が分かるようログ出力。
 	img, imgErr := u.image.Generate(ctx, endingType, route)
+	if imgErr != nil {
+		u.log.Printf("ending: image generate failed (type=%s route=%s): %v", endingType, route, imgErr)
+	}
 
 	ending := domain.Ending{
 		ID:         id,

@@ -100,6 +100,7 @@ func TestEndingUseCase_Great(t *testing.T) {
 		&fakeLimiter{allow: true},
 		&fakeID{id: "abc123"},
 		&fakeClock{ts: "2026-07-02T00:00:00Z"},
+		NopLogger{},
 	)
 	out, err := uc.Resolve(context.Background(), EndingInput{Lives: 3, FinalAction: "befriend", Cleared: true}, "s1")
 	if err != nil {
@@ -124,6 +125,7 @@ func TestEndingUseCase_GameOver(t *testing.T) {
 		&fakeLimiter{allow: true},
 		&fakeID{id: "x"},
 		&fakeClock{ts: "ts"},
+		NopLogger{},
 	)
 	out, err := uc.Resolve(context.Background(), EndingInput{Lives: 0, FinalAction: "gameover", Cleared: false}, "s1")
 	if err != nil {
@@ -144,6 +146,7 @@ func TestEndingUseCase_ImageFailureFallback(t *testing.T) {
 		&fakeLimiter{allow: true},
 		&fakeID{id: "id1"},
 		&fakeClock{ts: "ts"},
+		NopLogger{},
 	)
 	out, err := uc.Resolve(context.Background(), EndingInput{Lives: 2, FinalAction: "defeat", Cleared: true}, "s1")
 	if err != nil {

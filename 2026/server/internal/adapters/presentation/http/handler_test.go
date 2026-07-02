@@ -53,7 +53,7 @@ func (f *fakeClock) NowISO() string                            { return f.ts }
 func newHandlerWithStubs(t *testing.T, judgeOut usecase.JudgeOutput, judgeErr error, ending domain.Ending, loadErr error) *Handler {
 	t.Helper()
 	juc := usecase.NewJudgeUseCase(&stubJudge{out: judgeOut, err: judgeErr}, &fakeLimiter{allow: true})
-	euc := usecase.NewEndingUseCase(&stubStory{text: "s"}, &stubImg{}, &stubRepo{e: ending, err: loadErr}, &fakeLimiter{allow: true}, &fakeID{id: "abc"}, &fakeClock{ts: "ts"})
+	euc := usecase.NewEndingUseCase(&stubStory{text: "s"}, &stubImg{}, &stubRepo{e: ending, err: loadErr}, &fakeLimiter{allow: true}, &fakeID{id: "abc"}, &fakeClock{ts: "ts"}, usecase.NopLogger{})
 	return NewHandler(juc, euc, "https://example.com")
 }
 

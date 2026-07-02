@@ -59,3 +59,14 @@ type IDGenerator interface {
 type Clock interface {
 	NowISO() string
 }
+
+// Logger は usecase 層からの診断ログ用ポート(副作用)。infra が実装する。
+// 画像生成失敗など、上位へ伝播させないが運用で見たい事象を記録する。
+type Logger interface {
+	Printf(format string, args ...any)
+}
+
+// NopLogger は何も出力しない Logger(テスト用既定値)。
+type NopLogger struct{}
+
+func (NopLogger) Printf(string, ...any) {}

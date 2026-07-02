@@ -11,20 +11,38 @@ import (
 	"google.golang.org/genai"
 )
 
-// Config は Gemini/Imagen の実行時設定。Composition Root が env から組み立てる。
+// Config は Gemini の実行時設定。Composition Root が env から組み立てる。
 // モデル名をハードコードせず差し替え可能にする(来年変更や A/B 用)。
 type Config struct {
-	ModelJudge  string
-	ModelStory  string
-	ModelImagen string
+	ModelJudge string
+	ModelStory string
+	ModelImage string // 画像生成(Nano Banana Lite 系・generate_content 使用)
+
+	// ImageSize は出力画像の1辺(px)。正方形にリサイズ。
+	// gemini-3.1-flash-lite-image は 1024x1024(1K)のみ生成するため、
+	// デフォルト(1024)ではリサイズ不要。1024以外を指定すると生成後にサーバ側でリサイズする。
+	// 他モデル(gemini-3.1-flash-image 等)へ移行時や縮小用途に使用。0 ならリサイズしない。
+	// env: GEMINI_IMAGE_SIZE (default 1024)
+	ImageSize int
+
+	// ImageCount は1回の生成あたりの候補生成数(既定1=非バッチ)。
+	// Nano Banana は generate_content 1回で1枚を返すため、N>1 は N 回生成して
+	// 最初の成功画像を採用する(失敗時のフォールバック効果)。
+	// env: GEMINI_IMAGE_COUNT (default 1)
+	ImageCount int
 }
 
-// DefaultConfig は推奨値。flash 系でコスト/レイテシ優先。
+// DefaultConfig は推奨値。3.1 系 flash でコスト/レイテシ優先。
+// judge/story=3.1-flash-lite、画像=3.1-flash-lite-image(Imagen は 2026-08-17 廃止のため Nano Banana 系へ)。
+// 画像は 1024x1024(モデルのネイティブ出力)・1枚(非バッチ)。
+// サイズ/枚数は環境変数で変更可(他モデル移行時や縮小用途)。
 func DefaultConfig() Config {
 	return Config{
-		ModelJudge:  "gemini-2.5-flash",
-		ModelStory:  "gemini-2.5-flash",
-		ModelImagen: "imagen-3.0-generate-002",
+		ModelJudge: "gemini-3.1-flash-lite",
+		ModelStory: "gemini-3.1-flash-lite",
+		ModelImage: "gemini-3.1-flash-lite-image",
+		ImageSize:  1024,
+		ImageCount: 1,
 	}
 }
 
@@ -144,5 +162,5 @@ func indent(s string) string {
 var (
 	_ usecase.LLMJudgeGateway = (*JudgeGateway)(nil)
 	_ usecase.StoryGenerator  = (*StoryGenerator)(nil)
-	_ usecase.ImageGenerator  = (*ImagenGenerator)(nil)
+	_ usecase.ImageGenerator  = (*ImageGenerator)(nil)
 )

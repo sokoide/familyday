@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -54,8 +55,25 @@ func main() {
 	if v := os.Getenv("GEMINI_MODEL_STORY"); v != "" {
 		gcfg.ModelStory = v
 	}
-	if v := os.Getenv("GEMINI_MODEL_IMAGEN"); v != "" {
-		gcfg.ModelImagen = v
+	if v := os.Getenv("GEMINI_MODEL_IMAGE"); v != "" {
+		gcfg.ModelImage = v
+	}
+	// 画像サイズ(1辺px・正方形)。既定1024=ネイティブ出力(リサイズなし)。
+	// 他モデル移行時や縮小用途に変更可。env: GEMINI_IMAGE_SIZE
+	if v := os.Getenv("GEMINI_IMAGE_SIZE"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			gcfg.ImageSize = n
+		} else {
+			log.Printf("invalid GEMINI_IMAGE_SIZE=%q, using default %d", v, gcfg.ImageSize)
+		}
+	}
+	// 生成候補数(既定1=非バッチ)。増やすとコストN倍。env: GEMINI_IMAGE_COUNT
+	if v := os.Getenv("GEMINI_IMAGE_COUNT"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			gcfg.ImageCount = n
+		} else {
+			log.Printf("invalid GEMINI_IMAGE_COUNT=%q, using default %d", v, gcfg.ImageCount)
+		}
 	}
 
 	opts := app.Options{

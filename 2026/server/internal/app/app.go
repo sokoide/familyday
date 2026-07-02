@@ -45,11 +45,12 @@ func BuildMux(ctx context.Context, opts Options) (http.Handler, error) {
 	judgeUC := usecase.NewJudgeUseCase(gemini.NewJudgeGateway(gclient), limiter)
 	endingUC := usecase.NewEndingUseCase(
 		gemini.NewStoryGenerator(gclient),
-		gemini.NewImagenGenerator(gclient),
+		gemini.NewImageGenerator(gclient),
 		repo,
 		limiter,
 		sysid.UUIDGen{},
 		sysid.SystemClock{},
+		sysid.StdLogger{},
 	)
 
 	h := httpadapter.NewHandler(judgeUC, endingUC, opts.BaseURL)

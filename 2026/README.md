@@ -36,7 +36,7 @@ flowchart LR
   end
   subgraph 鯖[公開 Linux サーバ 独自ドメイン HTTPS]
     SRV[Go サーバ<br/>静的配信 + REST API]
-    SRV -->|判定/生成| GEM[(Google Gemini API<br/>gemini-2.5-flash + Imagen)]
+    SRV -->|判定/生成| GEM[(Google Gemini API<br/>gemini-3.1-flash-lite + flash-lite-image)]
     SRV -->|永続化| FS[(ローカルFS<br/>endings/*.json<br/>generated/*.png)]
   end
   B1 -->|HTTPS| SRV
@@ -45,7 +45,7 @@ flowchart LR
   MOB[スマホ] -.QR/メールで後日閲覧.-> SRV
 ```
 
-- **LLM/画像**: Google Gemini API(`gemini-2.5-flash` で判定・ストーリー、`Imagen` で画像)
+- **LLM/画像**: Google Gemini API(`gemini-3.1-flash-lite` で判定・ストーリー、`gemini-3.1-flash-lite-image`=Nano Banana Lite で画像。Imagen は 2026-08-17 廃止のため不使用)
 - **音声入力**: Web Speech API(ブラウザ内蔵)。HTTPS または localhost が必要(公開サーバ前提なのでOK)
 - **持ち帰り**: QR/メールのURLはサーバの公開ドメインそのまま(1週間アクセス可能)
 
@@ -255,9 +255,11 @@ go run ./cmd/server            # http://localhost:8080
 | `PORT` | `8080` | 待受ポート |
 | `DATA_DIR` | `data` | エンディングJSON・生成画像の格納先 |
 | `STATIC_DIR` | `static` | フロントビルド成果物の配置先 |
-| `GEMINI_MODEL_JUDGE` | `gemini-2.5-flash` | 判定用モデル |
-| `GEMINI_MODEL_STORY` | `gemini-2.5-flash` | ストーリー生成用モデル |
-| `GEMINI_MODEL_IMAGEN` | `imagen-3.0-generate-002` | 画像生成モデル |
+| `GEMINI_MODEL_JUDGE` | `gemini-3.1-flash-lite` | 判定用モデル |
+| `GEMINI_MODEL_STORY` | `gemini-3.1-flash-lite` | ストーリー生成用モデル |
+| `GEMINI_MODEL_IMAGE` | `gemini-3.1-flash-lite-image` | 画像生成モデル(Nano Banana Lite・`generate_content`) |
+| `GEMINI_IMAGE_SIZE` | `1024` | 画像の1辺(px・正方形)。モデルは1024固定出力。1024以外は生成後にサーバ側でリサイズ。他モデル移行時や縮小用途に変更可 |
+| `GEMINI_IMAGE_COUNT` | `1` | 生成候補数(非バッチ既定=1)。増やすと最初の成功を採用するまで複数回生成しコストN倍 |
 
 ---
 
