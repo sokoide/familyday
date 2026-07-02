@@ -25,12 +25,25 @@ func envOr(key, def string) string {
 	return def
 }
 
+// loadEnvFirst は引数の候補パスを順に試し、最初に読めた .env で環境変数を設定する。
+// 既にプロセス環境変数に設定されている値は上書きしない(godotenv の既定動作)。
+// 1つでも読めれば true。
+func loadEnvFirst(candidates ...string) bool {
+	for _, p := range candidates {
+		if err := godotenv.Load(p); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	// .env があれば読み込む(本番は環境変数を直接設定してもよい。既存 env は上書きしない)
-	if err := godotenv.Load(); err != nil {
+	// .env があれば読み込む(本番は環境変数を直接設定してもよい。既存 env は上書きしない)。
+	// サーバの CWD(2026/server) からでも 2026/.env を拾えるよう候補を複数試す。
+	if !loadEnvFirst(".env", "../.env") {
 		log.Println("no .env file loaded (using process env)")
 	}
 

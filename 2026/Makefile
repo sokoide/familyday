@@ -1,14 +1,15 @@
 # ドラゴン城の秘宝(2026)— ビルド/テスト/実行
+# この Makefile は 2026/ ディレクトリ内で実行すること:  cd 2026 && make ...
 #
 # よく使う:
 #   make            # build + unit test
 #   make integration GEMINI_API_KEY=xxx   # 実APIのE2Eテスト
-#   make run        # サーバ起動(2026/.env を読む)
+#   make run        # サーバ起動(.env を読む)
 #   make dev        # フロント開発サーバ(HMR)
 #   make check      # Clean Architecture 依存方向チェック
 
-SERVER_DIR := 2026/server
-WEB_DIR    := 2026/web
+SERVER_DIR := server
+WEB_DIR    := web
 BIN        := $(SERVER_DIR)/bin/familyday
 PORT       ?= 8080
 
@@ -101,6 +102,6 @@ help:
 	@echo "  make test-all                unit + integration"
 	@echo "  make vet / fmt               go vet / gofmt"
 	@echo "  make check                   Clean Architecture dependency check"
-	@echo "  make run [PORT=8080]         run server (reads 2026/.env)"
+	@echo "  make run [PORT=8080]         run server (reads .env in 2026/)"
 	@echo "  make dev                     vite dev server with API proxy"
 	@echo "  make clean                   remove build/test artifacts"

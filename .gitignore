@@ -19,3 +19,6 @@
 # TS incremental build info
 2026/web/tsconfig.tsbuildinfo
 *.tsbuildinfo
+
+# agent/tool session state
+.omc/

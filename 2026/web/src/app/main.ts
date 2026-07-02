@@ -270,17 +270,28 @@ async function main(): Promise<void> {
       }
     } catch (err) {
       els.micLabel.textContent = m.input.micLabel;
+      // 診断のため実際のエラーコードを必ずコンソールへ(本番でもスタッフが確認可能)
+      console.error("[speech] error:", err);
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("not-allowed") || msg.includes("service-not-allowed")) {
+        // OS/ブラウザのマイク拒否。macOS では システム設定›マイク の Edge 権限を確認
         showJudge(m.judge.micDenied);
         els.manualDetails.open = true;
-      } else if (msg.includes("no-speech")) {
-        showJudge(m.judge.noSpeech);
       } else if (msg.includes("not-supported")) {
         showJudge(m.judge.unsupported);
         els.manualDetails.open = true;
+      } else if (msg.includes("no-speech")) {
+        showJudge(m.judge.noSpeech);
+      } else if (msg.includes("network")) {
+        // クラウド音声サービスへ到達できない。ネットワーク/プロキシ/ファイアウォール確認
+        showJudge(m.judge.netError);
+      } else if (msg.includes("audio-capture")) {
+        // マイクデバイスが取れない。別アプリが占有していないか確認
+        showJudge(m.judge.micDenied);
+        els.manualDetails.open = true;
       } else {
-        showJudge(m.judge.generic);
+        // それ以外(aborted/unknown 等)。コードを表示して調査を容易にする
+        showJudge(`${m.judge.generic} (${msg})`);
       }
     }
   });
