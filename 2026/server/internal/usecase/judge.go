@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 
@@ -73,7 +74,7 @@ func (u *JudgeUseCase) Judge(ctx context.Context, in JudgeInput) (JudgeOutput, e
 		Verdict:    res.Verdict,
 		Route:      res.Route,
 		Message:    res.Message,
-		Reason:     res.Reason,
+		Reason:     sanitizeReason(res.Reason),
 		LivesDelta: res.Verdict.LivesDelta(),
 		Advance:    res.Verdict.Advances(),
 	}, nil
@@ -85,4 +86,34 @@ func rateKey(prefix, sessionID string) string {
 		s = "anon"
 	}
 	return prefix + ":" + s
+}
+
+// forbiddenLifeWords は reason から除去すべきライフ/ダメージ関連ワード。
+var forbiddenLifeWords = regexp.MustCompile(
+	`ライフ|ハート|ダメージ|減る|減ら[な]|へる|へら[な]|増える|増やす|ふえる|ふやす|` +
+		`いのち|体力|` +
+		`[Ll]ife|[Hh]eart|[Dd]amage|[Hh][Pp]\b|health`,
+)
+
+func sanitizeReason(s string) string {
+	if s == "" {
+		return s
+	}
+	// 句点・改行などで分割し、禁止ワードを含むセグメントを除去
+	segments := regexp.MustCompile(`[。！!？?\n]+`).Split(s, -1)
+	var clean []string
+	for _, seg := range segments {
+		seg = strings.TrimSpace(seg)
+		if seg == "" {
+			continue
+		}
+		if forbiddenLifeWords.MatchString(seg) {
+			continue
+		}
+		clean = append(clean, seg)
+	}
+	if len(clean) == 0 {
+		return "がんばったね！"
+	}
+	return strings.Join(clean, "。") + "。"
 }
