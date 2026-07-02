@@ -210,28 +210,37 @@ stateDiagram-v2
 ## クイックスタート(ローカル開発)
 
 ### 前提
-- Go 1.26+ / Node 20+
+- Go 1.26+ / Node 20+ / `make`(GNU Make)
 - Google AI Studio で発行した Gemini API キー
 
-### 1. フロントのビルド
+### 一括で動かす(Makefile)
+
+`2026/` ディレクトリ内で `make` を使う。全ターゲットはこのディレクトリ基準。
 
 ```bash
-cd 2026/web
-npm install
-npm run build        # 成果物 -> ../server/static/
-# 開発サーバを使う場合(API を :8080 へプロキシ):
-npm run dev          # http://localhost:5173
-```
+cd 2026
 
-### 2. バックエンドの起動
-
-```bash
-cd 2026/server
-cp ../.env.example ../.env     # .env に GEMINI_API_KEY を記入
-go run ./cmd/server            # http://localhost:8080
+make build          # 初回: web(npm install + build) → server ビルド。成果物は server/static/ へ
+cp .env.example .env   # .env に GEMINI_API_KEY を記入
+make run            # サーバ起動 → http://localhost:8080
 ```
 
 ブラウザで `http://localhost:8080` を開く。マイクは localhost でも動作する。
+
+> `.env` は `2026/` 直下に置く。サーバは起動時に `./.env` → `../.env` の順で探すので、`make run`(CWD=2026/server)でも `2026/.env` を読む。
+
+### 個別に動かす(Make 不使用)
+
+```bash
+# フロント
+cd 2026/web && npm install && npm run build    # -> ../server/static/
+npm run dev                                    # 開発サーバ(http://localhost:5173・API は :8080 へプロキシ)
+
+# バックエンド
+cd 2026/server
+cp ../.env.example ../.env     # GEMINI_API_KEY を記入
+go run ./cmd/server            # http://localhost:8080
+```
 
 ---
 
@@ -242,7 +251,7 @@ go run ./cmd/server            # http://localhost:8080
 | 変数 | 既定値 | 説明 |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | (必須) | Google AI Studio で発行 |
-| `PUBLIC_BASE_URL` | `http://localhost:8080` | QR/画像の**絶対URL**生成用。本番は `https://你的域名` |
+| `PUBLIC_BASE_URL` | `http://localhost:8080` | QR/画像の**絶対URL**生成用。本番は `https://example.com` |
 | `PORT` | `8080` | 待受ポート |
 | `DATA_DIR` | `data` | エンディングJSON・生成画像の格納先 |
 | `STATIC_DIR` | `static` | フロントビルド成果物の配置先 |
@@ -272,10 +281,10 @@ curl localhost:8080/api/result/<endingId>
 ## デプロイ(本番)
 
 1. 公開 Linux サーバへ `2026/` を配置。
-2. サーバ上で `cd 2026/web && npm install && npm run build`(成果物を `server/static/` へ)。
-3. `.env` の `PUBLIC_BASE_URL` を `https://你的域名` に設定。
+2. `cd 2026 && make build`(フロント成果物を `server/static/` へ。`make build-bin` でバイナリも生成可)。
+3. `2026/.env` の `PUBLIC_BASE_URL` を `https://example.com` に設定。
 4. リバースプロキシ(nginx 等)で **HTTPS(独自ドメイン)** → `:8080` へ転送。マイク利用に HTTPS が必須。
-5. systemd 等でバイナリ(`go build -o familyday ./cmd/server`)を常駐。
+5. systemd 等でバイナリ(`2026/server/bin/familyday`)を常駐。
 
 > イベント終了後は **1週間で公開終了** する。
 
@@ -283,7 +292,7 @@ curl localhost:8080/api/result/<endingId>
 
 ## テスト・静的解析
 
-リポジトリルートの **Makefile** で一元管理。主なターゲット:
+`2026/` の **Makefile** で一元管理(`cd 2026 && make ...`)。主なターゲット:
 
 ```bash
 make                  # build + unit test(既定・ネットワーク不要)
