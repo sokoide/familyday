@@ -109,7 +109,7 @@ const ja: Messages = {
       {
         title: "炎のトラップ",
         situation:
-          "城の なかに はいると、つうろが げれきの ほのおで つつまれていて すすめない!",
+          "城の なかに はいると、つうろが がれきの ほのおで つつまれていて すすめない!",
         goal: "ほのおを けす、または あんぜんに とびこえる じゅもんを となえよう!"
       },
       {
@@ -141,9 +141,9 @@ const ja: Messages = {
     unsupported:
       "このブラウザでは こえが つかえません。じでにゅうりょくしてね。",
     generic: "えらーが おきました。もういちど!",
-    noReason: "がんばりを おしえてくれたよ!",
+    noReason: "がんばったね!",
     lifeDown: "ハート -1",
-    lifeNone: "ハート へらず!",
+    lifeNone: "ハート へらないよ!",
     historyTitle: "📜 これまでの ぼうけん",
     historyEmpty: "まだ ぼうけんを はじめてないよ!"
   },
@@ -151,7 +151,7 @@ const ja: Messages = {
     titles: {
       great: "🏆 でんせつの ゆうしゃ エンド!",
       success: "✨ がんばった ゆうしゃ エンド!",
-      gameover: "😢 また ちょうせんしてね エンド"
+      gameover: "😢 また ちょうせんしてね エンド!"
     },
     fallbackEmoji: { great: "🏆", success: "✨", gameover: "😢" },
     shortLabel: {
@@ -161,10 +161,10 @@ const ja: Messages = {
     },
     fallbackTitle: "ぼうけん おわり!",
     fallbackStory:
-      "でんわが ちょっと つながりにくいようです。スタッフに きいてね。",
+      "つうしんが ちょっと つながりにくいようです。スタッフに きいてね。",
     netErrorTitle: "ぼうけん おわり!",
     netErrorStory:
-      "でんわが ちょっと つながりにくいようです。スタッフに きいてね。",
+      "つうしんが ちょっと つながりにくいようです。スタッフに きいてね。",
     qrNote: "スマホの カメラで よみとってね!",
     emailLabel: "メールで 送る",
     emailPlaceholder: "your@email.com",
@@ -174,7 +174,7 @@ const ja: Messages = {
       "ゆうしゃの きろくは こちら!\n(このURLは1しゅうかんだけ みられます)",
     resultUrlLabel: "",
     restart: "もういちど",
-    loading: "読み込み中…",
+    loading: "よみこみちゅう…",
     notFound: "きろくが みつかりませんでした"
   }
 };
@@ -187,7 +187,7 @@ const en: Messages = {
     subtitle: "— AI Magic Gamebook —",
     lines: [
       "You are a hero, heading to the Dragon Castle to save the princess.",
-      "Cast a spell with your voice and brave 3 challenges!"
+      "Cast a spell with your voice and face 3 challenges!"
     ],
     hint: "You have 3 hearts. Don't lose them all!",
     start: "Start the adventure",
@@ -237,7 +237,7 @@ const en: Messages = {
     unsupported: "Voice isn't available in this browser. Please type.",
     generic: "Something went wrong. Try again!",
     noReason: "You gave it a try!",
-    lifeDown: "heart -1",
+    lifeDown: "Heart -1",
     lifeNone: "no damage!",
     historyTitle: "📜 Your adventure so far",
     historyEmpty: "Start your adventure!"
@@ -246,7 +246,7 @@ const en: Messages = {
     titles: {
       great: "🏆 Legendary Hero Ending!",
       success: "✨ Brave Hero Ending!",
-      gameover: "😢 Try Again Ending"
+      gameover: "😢 Try Again Ending!"
     },
     fallbackEmoji: { great: "🏆", success: "✨", gameover: "😢" },
     shortLabel: {
@@ -261,7 +261,7 @@ const en: Messages = {
     qrNote: "Scan with your phone camera!",
     emailLabel: "Send by email",
     emailPlaceholder: "your@email.com",
-    emailBtn: "Send email",
+    emailBtn: "Send by email",
     emailSubject: "Dragon Castle — your adventure record",
     emailBody:
       "Here is your hero's record!\n(This link is available for one week.)",

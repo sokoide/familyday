@@ -134,7 +134,7 @@ func storyPrompt(t domain.EndingType, lang domain.Lang) string {
 	case domain.EndingGreat:
 		return base + "\n結末: 伝説の勇者。ドラゴンと仲良くなるかノーダメージで完全勝利し、お姫様と盛大なパーティー。"
 	case domain.EndingSuccess:
-		return base + "\n結末: がんばった勇者。満身創痍ながらドラゴンを撃退し、お姫様を救出。城の人に感謝される。"
+		return base + "\n結末: がんばった勇者。けがをしながらもドラゴンを撃退し、お姫様を救出。城の人に感謝される。"
 	default:
 		return base + "\n結末: また挑戦してね。コミカルに追いかけられて城の外へ脱出。お姫様が窓から「また助けに来てね!」と手を振る。悲しい響きを入れないこと。"
 	}
@@ -151,7 +151,7 @@ func imagenPrompt(t domain.EndingType, route domain.DragonRoute) string {
 		}
 		return common + "勇者とお姫様が城で盛大なお祝いパーティー、ドラゴンも友だち、花火、ハッピーで華やか"
 	case domain.EndingSuccess:
-		return common + "満身創痍の勇者がお姫様を無事に救出し、城の人々に「ありがとう」と感謝される温かいシーン"
+		return common + "けがをしながらも勇者がお姫様を無事に救出し、城の人々に「ありがとう」と感謝される温かいシーン"
 	default:
 		return common + "コミカルに勇者がドラゴンに追いかけられて城の外へ脱出、お姫様が窓から笑って手を振る前向きなシーン"
 	}
