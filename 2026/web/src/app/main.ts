@@ -15,9 +15,47 @@ import {
 import { createTimer, formatTime } from "./timer";
 import { getMessages, isLang, type Lang, type Messages } from "./messages";
 import { buildMailto, fallbackImage, isValidEmail } from "../ui/share";
-import { renderQR } from "../ui/qr";
 
 const LANG_KEY = "fd-lang";
+const SESSION_STATE_KEY = "fd-game-state";
+const SESSION_ENDING_KEY = "fd-ending-result";
+
+interface SavedSession {
+  state: GameState;
+  endingResult?: EndingResult;
+}
+
+function saveSession(state: GameState, endingResult?: EndingResult): void {
+  try {
+    sessionStorage.setItem(SESSION_STATE_KEY, JSON.stringify(state));
+    if (endingResult) {
+      sessionStorage.setItem(SESSION_ENDING_KEY, JSON.stringify(endingResult));
+    } else {
+      sessionStorage.removeItem(SESSION_ENDING_KEY);
+    }
+  } catch (e) {
+    console.error("Failed to save session state:", e);
+  }
+}
+
+function loadSession(): SavedSession | null {
+  try {
+    const stateStr = sessionStorage.getItem(SESSION_STATE_KEY);
+    if (!stateStr) return null;
+    const state = JSON.parse(stateStr) as GameState;
+    const endingResultStr = sessionStorage.getItem(SESSION_ENDING_KEY);
+    const endingResult = endingResultStr ? JSON.parse(endingResultStr) as EndingResult : undefined;
+    return { state, endingResult };
+  } catch (e) {
+    console.error("Failed to load session state:", e);
+    return null;
+  }
+}
+
+function clearSession(): void {
+  sessionStorage.removeItem(SESSION_STATE_KEY);
+  sessionStorage.removeItem(SESSION_ENDING_KEY);
+}
 
 function $(id: string): HTMLElement {
   const el = document.getElementById(id);
@@ -121,22 +159,82 @@ async function main(): Promise<void> {
     endingTitle: $("ending-title"),
     endingImage: $("ending-image") as HTMLImageElement,
     endingStory: $("ending-story"),
-    qrCanvas: $("qr-canvas") as HTMLCanvasElement,
     emailInput: $("email-input") as HTMLInputElement,
     emailBtn: $("btn-email") as HTMLButtonElement,
     resultUrl: $("result-url"),
     restart: $("btn-restart") as HTMLButtonElement,
   };
 
-  els.lives.textContent = hearts(state.lives);
-  els.micLabel.textContent = m.input.micLabel;
-  els.historyTitle.textContent = m.judge.historyTitle;
-  els.history.textContent = m.judge.historyEmpty;
+  // --- セッション復元 ---
+  const saved = loadSession();
+  if (saved) {
+    state = saved.state;
+    lang = state.lang;
+    m = getMessages(lang);
+    applyI18n(m);
 
-  if (!speech.isSupported()) {
-    els.mic.disabled = true;
-    els.micLabel.textContent = m.input.micUnsupported;
-    els.manualDetails.open = true;
+    els.lives.textContent = hearts(state.lives);
+    els.micLabel.textContent = m.input.micLabel;
+    els.historyTitle.textContent = m.judge.historyTitle;
+
+    // 履歴復元
+    els.history.textContent = "";
+    if (state.history && state.history.length > 0) {
+      state.history.forEach((hItem) => {
+        const li = document.createElement("li");
+        li.className = `history-item verdict-${hItem.verdict.toLowerCase()}`;
+        const stageNo = hItem.stageIndex + 1;
+        const lifeLabel = hItem.livesDelta < 0 ? `(${m.judge.lifeDown})` : `(${m.judge.lifeNone})`;
+        const reason = hItem.reason?.trim() || m.judge.noReason;
+        const quote = hItem.spoken.length > 30 ? hItem.spoken.slice(0, 30) + "…" : hItem.spoken;
+        li.textContent = `[${m.stage.prefix(stageNo).trim()}] "${quote}" → ${hItem.verdict} ${lifeLabel}: ${reason}`;
+        els.history.prepend(li);
+      });
+    } else {
+      els.history.textContent = m.judge.historyEmpty;
+    }
+
+    if (!speech.isSupported()) {
+      els.mic.disabled = true;
+      els.micLabel.textContent = m.input.micUnsupported;
+      els.manualDetails.open = true;
+    }
+
+    showPhase(state.phase);
+
+    if (state.phase === "stage") {
+      renderStage();
+      timer.start(
+        (rem) => {
+          els.timer.textContent = formatTime(rem);
+          state.timerRemaining = rem;
+          saveSession(state);
+        },
+        () => {
+          state = forceEnding(state);
+          saveSession(state);
+          void goEnding();
+        },
+        state.timerRemaining
+      );
+    } else if (state.phase === "ending") {
+      if (saved.endingResult) {
+        renderEnding(saved.endingResult);
+      } else {
+        void goEnding();
+      }
+    }
+  } else {
+    els.lives.textContent = hearts(state.lives);
+    els.micLabel.textContent = m.input.micLabel;
+    els.historyTitle.textContent = m.judge.historyTitle;
+    els.history.textContent = m.judge.historyEmpty;
+
+    if (!speech.isSupported()) {
+      els.mic.disabled = true;
+      els.micLabel.textContent = m.input.micUnsupported;
+      els.manualDetails.open = true;
+    }
   }
 
   function setLang(next: Lang): void {
@@ -284,12 +382,24 @@ async function main(): Promise<void> {
   }
 
   function onJudge(res: JudgeResult, spoken: string): void {
+    const prevStageIndex = state.stageIndex;
     state = applyJudge(state, res);
+
+    // 履歴追加
+    state.history.push({
+      stageIndex: prevStageIndex,
+      spoken,
+      verdict: res.verdict,
+      livesDelta: res.livesDelta,
+      reason: res.reason,
+    });
+    saveSession(state);
+
     els.lives.textContent = hearts(state.lives);
 
     // 判定理由をトースト表示(5秒) + 履歴へ蓄積
     showReason(res, spoken);
-    addHistory(state.stageIndex, spoken, res);
+    addHistory(prevStageIndex, spoken, res);
 
     if (state.phase === "ending") {
       releaseProcessing();
@@ -387,6 +497,7 @@ async function main(): Promise<void> {
         lang: state.lang,
       });
       renderEnding(res);
+      saveSession(state, res);
     } catch {
       // エラー時もフォールバック表示
       els.endingTitle.textContent = m.ending.netErrorTitle;
@@ -394,6 +505,7 @@ async function main(): Promise<void> {
       els.endingImage.onerror = () => {
         els.endingImage.src = fallbackImage(m.ending.fallbackEmoji.gameover, m.ending.shortLabel.gameover);
       };
+      els.endingImage.src = "";
     }
   }
 
@@ -401,18 +513,22 @@ async function main(): Promise<void> {
     lastResultUrl = res.resultUrl;
     els.endingTitle.textContent = m.ending.titles[res.endingType] ?? m.ending.fallbackTitle;
     els.endingStory.textContent = res.story;
-    els.endingImage.src = res.imageUrl;
-    els.endingImage.onerror = () => {
+    
+    if (!res.imageUrl) {
       els.endingImage.src = fallbackImage(
         m.ending.fallbackEmoji[res.endingType],
         m.ending.shortLabel[res.endingType],
       );
-    };
+    } else {
+      els.endingImage.src = res.imageUrl;
+      els.endingImage.onerror = () => {
+        els.endingImage.src = fallbackImage(
+          m.ending.fallbackEmoji[res.endingType],
+          m.ending.shortLabel[res.endingType],
+        );
+      };
+    }
     els.resultUrl.textContent = res.resultUrl;
-
-    void renderQR(els.qrCanvas, res.resultUrl).catch(() => {
-      /* QR 失敗時も URL テキストで救済済み */
-    });
   }
 
   // メール送信
@@ -427,6 +543,7 @@ async function main(): Promise<void> {
 
   // もういちど
   els.restart.addEventListener("click", () => {
+    clearSession();
     state = initialState(newSessionId(), lang);
     els.lives.textContent = hearts(state.lives);
     els.timer.textContent = formatTime(300);
@@ -453,23 +570,50 @@ async function renderResultPage(
       <img id="rv-image" class="ending-image" alt="" />
       <p id="rv-story" class="ending-story"></p>
       <p class="qr-note" id="rv-url"></p>
+      <div class="share-area" style="margin-top: 2rem;">
+        <div class="email-box">
+          <label for="email-input" id="email-label">${m.ending.emailLabel}</label>
+          <input id="email-input" type="email" placeholder="${m.ending.emailPlaceholder}" autocomplete="off" />
+          <button id="btn-email" class="small-btn" disabled>${m.ending.emailBtn}</button>
+        </div>
+      </div>
     </section>`;
   const title = document.getElementById("rv-title")!;
   const img = document.getElementById("rv-image") as HTMLImageElement;
   const story = document.getElementById("rv-story")!;
   const url = document.getElementById("rv-url")!;
+
+  const emailInput = document.getElementById("email-input") as HTMLInputElement;
+  const emailBtn = document.getElementById("btn-email") as HTMLButtonElement;
+
   try {
     const r = await resultApi.load(id);
     const t: EndingType = r.endingType;
     title.textContent = m.ending.titles[t] ?? m.ending.fallbackTitle;
     story.textContent = r.story;
-    img.src = r.imageUrl;
-    img.onerror = () => {
+    
+    if (!r.imageUrl) {
       img.src = fallbackImage(m.ending.fallbackEmoji[t], m.ending.shortLabel[t]);
-    };
+    } else {
+      img.src = r.imageUrl;
+      img.onerror = () => {
+        img.src = fallbackImage(m.ending.fallbackEmoji[t], m.ending.shortLabel[t]);
+      };
+    }
     url.textContent = r.resultUrl;
+
+    emailInput.addEventListener("input", () => {
+      emailBtn.disabled = !isValidEmail(emailInput.value);
+    });
+    emailBtn.addEventListener("click", () => {
+      const email = emailInput.value;
+      if (!isValidEmail(email)) return;
+      location.href = buildMailto(email, r.resultUrl, m.ending.emailSubject, m.ending.emailBody);
+    });
   } catch {
     title.textContent = m.ending.notFound;
+    const shareArea = app.querySelector(".share-area");
+    if (shareArea) (shareArea as HTMLElement).style.display = "none";
   }
 }
 

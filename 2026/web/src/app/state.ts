@@ -7,6 +7,14 @@ export type Phase = "intro" | "stage" | "ending";
 export const MAX_LIVES = 3;
 export const TOTAL_SECONDS = 300; // 5分
 
+export interface HistoryItem {
+  stageIndex: number;
+  spoken: string;
+  verdict: string;
+  livesDelta: number;
+  reason: string;
+}
+
 export interface GameState {
   phase: Phase;
   stageIndex: number; // 0..2
@@ -16,6 +24,8 @@ export interface GameState {
   lang: Lang;
   isProcessing: boolean;
   timeUp: boolean;
+  timerRemaining: number;
+  history: HistoryItem[];
 }
 
 export function initialState(sessionId: string, lang: Lang): GameState {
@@ -28,11 +38,13 @@ export function initialState(sessionId: string, lang: Lang): GameState {
     lang,
     isProcessing: false,
     timeUp: false,
+    timerRemaining: TOTAL_SECONDS,
+    history: [],
   };
 }
 
 export function start(s: GameState): GameState {
-  return { ...s, phase: "stage", stageIndex: 0, lives: MAX_LIVES };
+  return { ...s, phase: "stage", stageIndex: 0, lives: MAX_LIVES, timerRemaining: TOTAL_SECONDS, history: [] };
 }
 
 // 判定適用。次フェーズ/ライフ/ルートを計算して新しい state を返す。

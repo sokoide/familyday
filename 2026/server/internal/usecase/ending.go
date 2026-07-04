@@ -80,13 +80,18 @@ func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID s
 		u.log.Printf("ending: image generate failed (type=%s route=%s): %v", endingType, route, imgErr)
 	}
 
+	imageFile := ""
+	if imgErr == nil {
+		imageFile = id + ".png"
+	}
+
 	ending := domain.Ending{
 		ID:         id,
 		EndingType: endingType,
 		Lives:      lives,
 		Route:      route,
 		Story:      story,
-		ImageFile:  id + ".png",
+		ImageFile:  imageFile,
 		CreatedAt:  u.clock.NowISO(),
 	}
 

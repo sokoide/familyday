@@ -25,6 +25,9 @@ func NewHandler(j *usecase.JudgeUseCase, e *usecase.EndingUseCase, baseURL strin
 
 // imageUrl / resultUrl を絶対URLで構築。
 func (h *Handler) imageURL(file string) string {
+	if file == "" {
+		return ""
+	}
 	return h.baseURL + "/img/" + path.Base(file)
 }
 func (h *Handler) resultURL(id string) string {

@@ -2,7 +2,7 @@
 import { TOTAL_SECONDS } from "./state";
 
 export interface Timer {
-  start(onTick: (remaining: number) => void, onZero: () => void): void;
+  start(onTick: (remaining: number) => void, onZero: () => void, startFrom?: number): void;
   stop(): void;
   remaining(): number;
 }
@@ -12,8 +12,8 @@ export function createTimer(intervalMs = 1000): Timer {
   let handle: number | null = null;
 
   return {
-    start(onTick, onZero) {
-      remaining = TOTAL_SECONDS;
+    start(onTick, onZero, startFrom?: number) {
+      remaining = startFrom !== undefined ? startFrom : TOTAL_SECONDS;
       onTick(remaining);
       handle = window.setInterval(() => {
         remaining -= 1;
