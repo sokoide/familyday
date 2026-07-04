@@ -17,7 +17,7 @@ export interface HistoryItem {
 
 export interface GameState {
   phase: Phase;
-  stageIndex: number; // 0..2
+  stageIndex: number; // 0..3
   lives: number; // 0..3
   dragonRoute: DragonRoute;
   sessionId: string;
@@ -53,7 +53,7 @@ export function applyJudge(s: GameState, res: JudgeResult): GameState {
   if (lives < 0) lives = 0;
   if (lives > MAX_LIVES) lives = MAX_LIVES;
 
-  const isLast = s.stageIndex >= 2;
+  const isLast = s.stageIndex >= 3;
   const route: DragonRoute = isLast ? res.route : "";
 
   // ライフ0 → 強制エンディング(gameover)

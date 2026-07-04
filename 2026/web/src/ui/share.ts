@@ -9,10 +9,11 @@ export function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
-// mailto: URL を構築。本文に結果URLを自動挿入。subject/body は多言語文字列。
-export function buildMailto(email: string, resultUrl: string, subject: string, body: string): string {
+// mailto: URL を構築。本文は行配列を改行で結合。subject は多言語文字列。
+export function buildAdventureMailto(email: string, subject: string, bodyLines: string[]): string {
   const to = email.trim();
-  const params = new URLSearchParams({ subject, body: `${body}\n${resultUrl}` });
+  const body = bodyLines.join("\n");
+  const params = new URLSearchParams({ subject, body });
   return `mailto:${encodeURIComponent(to)}?${params.toString()}`;
 }
 

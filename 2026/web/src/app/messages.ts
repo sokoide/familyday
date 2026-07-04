@@ -30,13 +30,14 @@ export interface Messages {
 
   stage: {
     prefix: (n: number) => string; // "ステージ1: " 等
-    stages: StageText[]; // 3ステージ分の表示テキスト
+    stages: StageText[]; // 4ステージ分の表示テキスト
   };
 
   input: {
     micLabel: string;
     listening: string;
     judging: string; // 判定送信中のラベル
+    ended: string; // エンディング中のラベル（押せない）
     micUnsupported: string;
     manualSummary: string;
     manualPlaceholder: string;
@@ -68,13 +69,14 @@ export interface Messages {
     fallbackStory: string;
     netErrorTitle: string;
     netErrorStory: string;
-    qrNote: string;
     emailLabel: string;
     emailPlaceholder: string;
     emailBtn: string;
     emailSubject: string;
     emailBody: string;
-    resultUrlLabel: string;
+    adventureHeader: string; // メール本文の冒険記録ヘッダ
+    clearedLabel: string; // エンディング成功ラベル
+    failedLabel: string; // エンディング失敗ラベル
     restart: string;
     loading: string;
     notFound: string;
@@ -87,7 +89,7 @@ const ja: Messages = {
   langName: "日本語",
   intro: {
     title: "🐉 トムハラゴン城の秘宝",
-    subtitle: "〜 AI魔法のゲームブック 〜",
+    subtitle: "〜 AI ゲームブック 〜",
     lines: [
       "あなたは ゆうしゃ。おひめさまを たすけるため、トムハラゴン城へ むかいます。",
       "こえで ゆうしゃの「こうどう」を いってね!（例: どいて! / ねがいを かなえて! / すりぬける!）"
@@ -100,6 +102,12 @@ const ja: Messages = {
   stage: {
     prefix: (n) => `ステージ${n}: `,
     stages: [
+      {
+        title: "遠くのお城",
+        situation:
+          "とおくにドラゴン城がみえる。おひめさまは そこにいるます。でも、目の前に 川が流れていて むこうにわたれない!",
+        goal: "どうやって むこうにわたる?  ことばで いってね!"
+      },
       {
         title: "城門のゴーレム",
         situation:
@@ -124,6 +132,7 @@ const ja: Messages = {
     micLabel: "押して はなす",
     listening: "ききとりちゅう…",
     judging: "しんぱんちゅう…",
+    ended: "しゅうりょう",
     micUnsupported: "文字で にゅうりょく",
     manualSummary: "こえが とおらないとき：文字で にゅうりょく",
     manualPlaceholder: "ゆうしゃは どう する? (ことばで いれてね)",
@@ -165,14 +174,14 @@ const ja: Messages = {
     netErrorTitle: "ぼうけん おわり!",
     netErrorStory:
       "つうしんが ちょっと つながりにくいようです。スタッフに きいてね。",
-    qrNote: "スマホの カメラで よみとってね!",
     emailLabel: "メールで 送る",
     emailPlaceholder: "your@email.com",
     emailBtn: "メールで 送る",
     emailSubject: "ドラゴン城の秘宝・あなたのぼうけんのきろく",
-    emailBody:
-      "ゆうしゃの きろくは こちら!\n(このURLは1しゅうかんだけ みられます)",
-    resultUrlLabel: "",
+    emailBody: "ゆうしゃの ぼうけんきろくを おくるよ!",
+    adventureHeader: "— これまでの ぼうけん —",
+    clearedLabel: "けっか: クリア!",
+    failedLabel: "けっか: ざんねん!",
     restart: "もういちど",
     loading: "よみこみちゅう…",
     notFound: "きろくが みつかりませんでした"
@@ -184,7 +193,7 @@ const en: Messages = {
   langName: "English",
   intro: {
     title: "🐉 Tom Harragon Castle's Secret",
-    subtitle: "— AI Magic Gamebook —",
+    subtitle: "— AI Gamebook —",
     lines: [
       "You are a hero, heading to the Dragon Castle to save the princess.",
       "Say what your hero does! (e.g.: Move! / Make a wish! / Slip past it!)"
@@ -197,6 +206,12 @@ const en: Messages = {
   stage: {
     prefix: (n) => `Stage ${n}: `,
     stages: [
+      {
+        title: "The Castle behind a river",
+        situation:
+          "The Dragon Castle is visible in the distance. But there's a river in front of you, and you can't cross it!",
+        goal: "How do you cross the river? Say it!"
+      },
       {
         title: "The Castle Gate Golem",
         situation:
@@ -221,6 +236,7 @@ const en: Messages = {
     micLabel: "Tap & speak",
     listening: "Listening…",
     judging: "Judging…",
+    ended: "End",
     micUnsupported: "Type it instead",
     manualSummary: "If voice doesn't work: type it",
     manualPlaceholder: "What does your hero do? (type it)",
@@ -258,14 +274,14 @@ const en: Messages = {
     fallbackStory: "The connection seems weak. Please ask the staff.",
     netErrorTitle: "Adventure Over!",
     netErrorStory: "The connection seems weak. Please ask the staff.",
-    qrNote: "Scan with your phone camera!",
     emailLabel: "Send by email",
     emailPlaceholder: "your@email.com",
     emailBtn: "Send by email",
     emailSubject: "Dragon Castle — your adventure record",
-    emailBody:
-      "Here is your hero's record!\n(This link is available for one week.)",
-    resultUrlLabel: "",
+    emailBody: "Here is your hero's adventure record!",
+    adventureHeader: "— Your adventure —",
+    clearedLabel: "Result: Cleared!",
+    failedLabel: "Result: Try again!",
     restart: "Play again",
     loading: "Loading…",
     notFound: "Record not found"

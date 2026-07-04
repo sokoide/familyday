@@ -32,6 +32,7 @@
         </header>
         <div class="story-card">
           <h2 id="stage-title" class="stage-title"></h2>
+          <img id="stage-image" class="stage-image" alt="" />
           <p id="stage-situation"></p>
           <p id="stage-goal" class="goal"></p>
         </div>
@@ -63,16 +64,17 @@
 
       <!-- エンディング -->
       <section data-phase="ending" class="screen" hidden>
-        <h2 id="ending-title" class="ending-title"></h2>
-        <img id="ending-image" class="ending-image" alt="" />
-        <p id="ending-story" class="ending-story"></p>
+        <div class="story-card">
+          <h2 id="ending-title" class="ending-title"></h2>
+          <img id="ending-image" class="ending-image" alt="" />
+          <p id="ending-result" class="ending-result"></p>
+        </div>
 
         <div class="share-area">
           <div class="email-box">
             <label for="email-input" id="email-label"></label>
             <input id="email-input" type="email" autocomplete="off" />
             <button id="btn-email" class="small-btn" disabled></button>
-            <p class="result-url" id="result-url"></p>
           </div>
         </div>
 
