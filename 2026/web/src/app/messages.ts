@@ -90,7 +90,7 @@ const ja: Messages = {
     subtitle: "〜 AI魔法のゲームブック 〜",
     lines: [
       "あなたは ゆうしゃ。おひめさまを たすけるため、トムハラゴン城へ むかいます。",
-      "こえで「じゅもん（短い文）」を となえて、3つの しれんを とっぱしよう!"
+      "こえで ゆうしゃの「こうどう」を いってね!（例: どいて! / ねがいを かなえて! / すりぬける!）"
     ],
     hint: "ハートが 3つ あります。なくならないように きをつけてね!",
     start: "ぼうけんを はじめる",
@@ -104,19 +104,19 @@ const ja: Messages = {
         title: "城門のゴーレム",
         situation:
           "ドラゴン城の まえに とうちゃくした。でも、おおきくて こわい「もんばんのゴーレム」が とおせんぼしている!",
-        goal: "ゴーレムを どかす、または とおりぬける じゅもんを となえよう!"
+        goal: "ゴーレムが とおせんぼ! ゆうしゃは どう する?  ことばで いってね!"
       },
       {
         title: "炎のトラップ",
         situation:
           "城の なかに はいると、つうろが がれきの ほのおで つつまれていて すすめない!",
-        goal: "ほのおを けす、または あんぜんに とびこえる じゅもんを となえよう!"
+        goal: "ほのおが みちを ふさいでる! ゆうしゃは どう する?  ことばで いってね!"
       },
       {
         title: "トムハラゴンとの さいしゅうけっせん",
         situation:
           "さいじょうかいで おひめさまを はっけん!でも、おこった ドラゴンが おそいかかってきた!",
-        goal: "ドラゴンを たおす、または なかよくする じゅもんを となえよう!"
+        goal: "ドラゴンが おそいかかってきた! たおす? それとも なかよくする?  ことばで いってね!"
       }
     ]
   },
@@ -126,8 +126,8 @@ const ja: Messages = {
     judging: "しんぱんちゅう…",
     micUnsupported: "文字で にゅうりょく",
     manualSummary: "こえが とおらないとき：文字で にゅうりょく",
-    manualPlaceholder: "じゅもんを かいてね",
-    manualBtn: "となえる"
+    manualPlaceholder: "ゆうしゃは どう する? (ことばで いれてね)",
+    manualBtn: "おくる"
   },
   judge: {
     bad: "おしい!もういちど かんがえて みよう! 💡",
@@ -187,7 +187,7 @@ const en: Messages = {
     subtitle: "— AI Magic Gamebook —",
     lines: [
       "You are a hero, heading to the Dragon Castle to save the princess.",
-      "Cast a spell with your voice and face 3 challenges!"
+      "Say what your hero does! (e.g.: Move! / Make a wish! / Slip past it!)"
     ],
     hint: "You have 3 hearts. Don't lose them all!",
     start: "Start the adventure",
@@ -201,19 +201,19 @@ const en: Messages = {
         title: "The Castle Gate Golem",
         situation:
           "You reach the Tom Harragon Castle. But a huge, scary Gate Golem blocks the way!",
-        goal: "Cast a spell to move the golem or slip past it!"
+        goal: "The Golem blocks the way! What does your hero do? Say it!"
       },
       {
         title: "The Fire Trap",
         situation:
           "Inside the castle, the hallway is wrapped in fierce flames. You can't go forward!",
-        goal: "Cast a spell to put out the fire or leap over it safely!"
+        goal: "Flames block the path! What does your hero do? Say it!"
       },
       {
         title: "The Final Tom Harragon Battle",
         situation:
           "On the top floor you find the princess! But an angry dragon attacks!",
-        goal: "Cast a spell to defeat the dragon or befriend it!"
+        goal: "The dragon attacks! Fight it or befriend it? What does your hero do? Say it!"
       }
     ]
   },
@@ -223,8 +223,8 @@ const en: Messages = {
     judging: "Judging…",
     micUnsupported: "Type it instead",
     manualSummary: "If voice doesn't work: type it",
-    manualPlaceholder: "Type your spell",
-    manualBtn: "Cast"
+    manualPlaceholder: "What does your hero do? (type it)",
+    manualBtn: "Send"
   },
   judge: {
     bad: "So close! Think and try again! 💡",

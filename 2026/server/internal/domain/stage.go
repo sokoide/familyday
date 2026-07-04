@@ -34,11 +34,11 @@ func (s StageID) Next() StageID {
 func (s StageID) IsLast() bool { return s == StageDragon }
 
 // Stage は1ステージの描写メタ。成功条件は LLM 審判プロンプトに渡す基準。
+// 画面表示用の文言は UI 側(messages.ts)が唯一の正(二重管理を避けるため Goal フィールドは持たない)。
 type Stage struct {
 	ID               StageID
-	Title            string // 表示名
-	Situation        string // 状況描写(子供向け)
-	Goal             string // 目的(画面表示用)
+	Title            string // 表示名(プロンプト埋め込み用。UI 表示は messages.ts 側)
+	Situation        string // 状況描写(プロンプト埋め込み用)
 	SuccessSpec      string // 審判基準(LLM へ渡す成功条件の自然言語仕様)
 	NeedsDragonRoute bool   // stage3 は route 判定が必要
 }

@@ -53,7 +53,7 @@ func thinkingBudgetTokens() *int32 {
 }
 
 // blockedMessage はセーフティでブロックされた時の子供向け Bad メッセージ。
-const blockedMessage = "そのことばは ちょっと つかえないよ。べつの じゅもんを ためしてね!"
+const blockedMessage = "そのことばは ちょっと つかえないよ。べつの ことばで やってみよう!"
 
 // safetySettings は子供向けコンテンツ向けの閾値。
 func safetySettings() []*genai.SafetySetting {
