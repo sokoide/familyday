@@ -329,6 +329,10 @@ async function main(): Promise<void> {
       () => {
         // 時間切れ: 強制エンディング
         state = { ...forceEnding(state), isProcessing: false };
+        clearPendingAdvanceTimer();
+        els.mic.disabled = true;
+        els.manualBtn.disabled = true;
+        els.micLabel.textContent = m.input.ended;
         void goEnding();
       },
     );

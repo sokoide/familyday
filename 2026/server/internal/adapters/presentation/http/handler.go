@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/sokoide/familyday/server/internal/domain"
 	"github.com/sokoide/familyday/server/internal/usecase"
@@ -86,16 +87,23 @@ func (h *Handler) Ending(w http.ResponseWriter, r *http.Request) {
 		Cleared:     req.Cleared,
 		Lang:        domain.NormalizeLang(req.Lang),
 		History: func() []usecase.AdventureEvent {
+			// History の要素数・各フィールド長に上限を設け、悪意クライアントによる
+			// プロンプト膨張・コスト増大を防ぐ。4ステージ分をカバーする上限。
+			const maxHistory = 16
+			const maxFieldLen = 300
 			if len(req.History) == 0 {
 				return nil
+			}
+			if len(req.History) > maxHistory {
+				req.History = req.History[:maxHistory]
 			}
 			history := make([]usecase.AdventureEvent, 0, len(req.History))
 			for _, item := range req.History {
 				history = append(history, usecase.AdventureEvent{
 					StageIndex: item.StageIndex,
-					Spoken:     item.Spoken,
+					Spoken:     truncateRunes(item.Spoken, maxFieldLen),
 					Verdict:    item.Verdict,
-					Reason:     item.Reason,
+					Reason:     truncateRunes(item.Reason, maxFieldLen),
 				})
 			}
 			return history
@@ -138,6 +146,15 @@ func (h *Handler) Result(w http.ResponseWriter, r *http.Request) {
 // --- helpers ---
 
 var errRequestTooLarge = errors.New("request body too large")
+
+// truncateRunes は s を最大 n ルーンに切り詰める。履歴フィールドの長さ制限用。
+func truncateRunes(s string, n int) string {
+	if utf8.RuneCountInString(s) <= n {
+		return s
+	}
+	runes := []rune(s)
+	return string(runes[:n])
+}
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, v any) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)

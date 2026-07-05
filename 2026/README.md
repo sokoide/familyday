@@ -92,20 +92,26 @@ flowchart TB
 ```mermaid
 stateDiagram-v2
   [*] --> Intro
-  Intro --> Stage1: 開始(タイマー開始 5:00)
+  Intro --> Practice: れんしゅう
+  Intro --> Stage1: ぼうけんをはじめる(タイマー開始 5:00)
+  Practice --> Intro: もどる
   Stage1 --> Stage2: Great/Good
   Stage2 --> Stage3: Great/Good
-  Stage3 --> Ending: Great/Good<br/>(route=defeat|befriend)
+  Stage3 --> Stage4: Great/Good
+  Stage4 --> Ending: Great/Good<br/>(route=defeat|befriend)
   Stage1 --> Ending: lives=0
   Stage2 --> Ending: lives=0
   Stage3 --> Ending: lives=0
+  Stage4 --> Ending: lives=0
   Stage1 --> Stage1: Bad(リトライ・lives-1)
   Stage2 --> Stage2: Bad
   Stage3 --> Stage3: Bad
+  Stage4 --> Stage4: Bad
   Stage1 --> Ending: タイムアップ
   Stage2 --> Ending: タイムアップ
   Stage3 --> Ending: タイムアップ
-  Ending --> [*]: QR/メール表示
+  Stage4 --> Ending: タイムアップ
+  Ending --> [*]: メール送信
 ```
 
 **判定とライフ**:
@@ -125,6 +131,20 @@ stateDiagram-v2
 | 🏆 great | クリア時・満ライフ、またはドラゴンと友好(`befriend`) |
 | ✨ success | クリア時・ライフ1〜2 |
 | 😢 gameover | ライフ0、または未クリア(タイムアップ含む) |
+
+---
+
+## れんしゅうモード
+
+intro画面の「れんしゅう」ボタンから、マイク操作に慣れるための1ステージ練習モードに入ります。
+
+- **状況**: 歩いていると Alice のものとみられるかばんのおとしものがある。遠くに交番が見える。どうする!
+- **判定**: フロントの簡易キーワード判定（サーバー・LLM不使用・即時）
+  - 交番に届ける系（「こうばん」「とどける」「police」「return」等）→ 成功(緑)
+  - 無視して立ち去る系（「むし」「あるく」「ignore」「walk」等）→ 失敗(赤)
+  - 否定形（「とどけない」「わたさない」等）は失敗に倒す
+- **画像**: `web/public/images/practice.jpg` を表示
+- 「もどる」ボタンでintroに復帰します
 
 ---
 
