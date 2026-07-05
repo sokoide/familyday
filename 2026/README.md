@@ -408,12 +408,56 @@ curl localhost:8080/api/result/<endingId>
 ## デプロイ(本番)
 
 1. 公開 Linux サーバへ `2026/` を配置。
-2. `cd 2026 && make build`(フロント成果物を `server/static/` へ。`make build-bin` でバイナリも生成可)。
-3. `2026/.env` の `PUBLIC_BASE_URL` を `https://example.com` に設定。
-4. リバースプロキシ(nginx 等)で **HTTPS(独自ドメイン)** → `:8080` へ転送。マイク利用に HTTPS が必須。
-5. systemd 等でバイナリ(`2026/server/bin/familyday`)を常駐。
+2. `cd 2026 && make build` を実行して、フロント成果物を `server/static/` に生成する。
+3. `cd 2026 && make build-bin` を実行して、サーババイナリ `server/bin/familyday` を生成する。
+4. 本番サーバでは、少なくとも次の3点を同じ作業ディレクトリに置く。
+   - `familyday` バイナリ
+   - `static/` ディレクトリ
+   - `.env`
+5. 例として `/opt/familyday/` に配置するなら、次のように置く。
+   - `/opt/familyday/familyday`
+   - `/opt/familyday/static/`
+   - `/opt/familyday/.env`
+6. `.env` の `PUBLIC_BASE_URL` を本番ドメインに設定する。
+7. systemd で `familyday` を常駐させる。`WorkingDirectory` は配置先ディレクトリ、`ExecStart` は `./familyday` にする。
+8. リバースプロキシ(nginx 等)で **HTTPS(独自ドメイン)** → `127.0.0.1:8080` へ転送する。マイク利用に HTTPS が必須。
 
 > イベント終了後は **1週間で公開終了** する。
+
+### systemd 例
+
+```ini
+[Unit]
+Description=familyday
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/familyday
+EnvironmentFile=/opt/familyday/.env
+ExecStart=/opt/familyday/familyday
+Restart=always
+RestartSec=3
+User=familyday
+Group=familyday
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### 配置手順の要点
+
+```bash
+cd 2026
+make build
+make build-bin
+sudo mkdir -p /opt/familyday
+sudo cp server/bin/familyday /opt/familyday/
+sudo cp -r server/static /opt/familyday/
+sudo cp .env /opt/familyday/
+sudo chown -R familyday:familyday /opt/familyday
+```
+
+`make build-bin` はバイナリのみを作るため、`server/static/` は `make build` で別途生成して一緒に配置する。
 
 ---
 
