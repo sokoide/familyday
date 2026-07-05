@@ -104,10 +104,10 @@ const ja: Messages = {
   lang: "ja",
   langName: "日本語",
   intro: {
-    title: "🐉 トムハラゴン城の秘宝",
+    title: "🐉 ドラゴン城の秘宝",
     subtitle: "〜 AI ゲームブック 〜",
     lines: [
-      "あなたは ゆうしゃ。おひめさまを たすけるため、トムハラゴン城へ むかいます。",
+      "あなたは ゆうしゃ。おひめさまを たすけるため、ドラゴン城へ むかいます。",
       "あなたは さまざまな まほうを 使えます。まほうの なまえは じゆうに決めてください。",
       "こえで ゆうしゃの「こうどう」を いってね!（例: どいて! / ねがいを かなえて! / すりぬける!）"
     ],
@@ -137,13 +137,13 @@ const ja: Messages = {
       {
         title: "遠くのお城",
         situation:
-          "とおくにトムハラゴン城がみえる。おひめさまは そこにいるます。でも、目の前に 川が流れていて むこうにわたれない!",
+          "とおくにドラゴン城がみえる。おひめさまは そこにいるます。でも、目の前に 川が流れていて むこうにわたれない!",
         goal: "どうやって むこうにわたる?  ことばで いってね!"
       },
       {
         title: "城門のゴーレム",
         situation:
-          "トムハラゴン城の まえに とうちゃくした。でも、おおきくて こわい「もんばんのゴーレム」が とおせんぼしている!",
+          "ドラゴン城の まえに とうちゃくした。でも、おおきくて こわい「もんばんのゴーレム」が とおせんぼしている!",
         goal: "ゴーレムが とおせんぼ! ゆうしゃは どう する?  ことばで いってね!"
       },
       {
@@ -153,7 +153,7 @@ const ja: Messages = {
         goal: "ほのおが みちを ふさいでる! ゆうしゃは どう する?  ことばで いってね!"
       },
       {
-        title: "トムハラゴンとの さいしゅうけっせん",
+        title: "ドラゴンとの さいしゅうけっせん",
         situation:
           "さいじょうかいで おひめさまを はっけん!でも、おこった ドラゴンが おそいかかってきた!",
         goal: "ドラゴンが おそいかかってきた! たおす? それとも なかよくする?  ことばで いってね!"
@@ -209,7 +209,7 @@ const ja: Messages = {
     emailLabel: "メールで 送る",
     emailPlaceholder: "your@email.com",
     emailBtn: "メールで 送る",
-    emailSubject: "トムハラゴン城の秘宝・あなたのぼうけんのきろく",
+    emailSubject: "ドラゴン城の秘宝・あなたのぼうけんのきろく",
     emailBody: "ゆうしゃの ぼうけんきろくを おくるよ!",
     adventureHeader: "— これまでの ぼうけん —",
     clearedLabel: "けっか: クリア!",
@@ -225,10 +225,10 @@ const en: Messages = {
   lang: "en",
   langName: "English",
   intro: {
-    title: "🐉 Tom Harragon Castle's Secret",
+    title: "🐉 Dragon Castle's Secret",
     subtitle: "— AI Gamebook —",
     lines: [
-      "You are a hero, heading to the Tom Harragon Castle to save the princess.",
+      "You are a hero, heading to the Dragon Castle to save the princess.",
       "You can use various spells. Name them as you wish.",
       "Say what your hero does! (e.g.: Move! / Make a wish! / Slip past it!)"
     ],
@@ -258,13 +258,13 @@ const en: Messages = {
       {
         title: "The Castle behind a river",
         situation:
-          "The Tom Harragon Castle is visible in the distance. But there's a river in front of you, and you can't cross it!",
+          "The Dragon Castle is visible in the distance. But there's a river in front of you, and you can't cross it!",
         goal: "How do you cross the river? Say it!"
       },
       {
         title: "The Castle Gate Golem",
         situation:
-          "You reach the Tom Harragon Castle. But a huge, scary Gate Golem blocks the way!",
+          "You reach the Dragon Castle. But a huge, scary Gate Golem blocks the way!",
         goal: "The Golem blocks the way! What does your hero do? Say it!"
       },
       {
@@ -274,7 +274,7 @@ const en: Messages = {
         goal: "Flames block the path! What does your hero do? Say it!"
       },
       {
-        title: "The Final Tom Harragon Battle",
+        title: "The Final Dragon Battle",
         situation:
           "On the top floor you find the princess! But an angry dragon attacks!",
         goal: "The dragon attacks! Fight it or befriend it? What does your hero do? Say it!"
@@ -326,7 +326,7 @@ const en: Messages = {
     emailLabel: "Send by email",
     emailPlaceholder: "your@email.com",
     emailBtn: "Send by email",
-    emailSubject: "Tom Harragon Castle — your adventure record",
+    emailSubject: "Dragon Castle — your adventure record",
     emailBody: "Here is your hero's adventure record!",
     adventureHeader: "— Your adventure —",
     clearedLabel: "Result: Cleared!",
