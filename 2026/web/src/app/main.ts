@@ -334,6 +334,7 @@ async function main(): Promise<void> {
     practiceEls.situation.textContent = m.practice.situation;
     practiceEls.goal.textContent = m.practice.goal;
     practiceEls.message.hidden = true;
+    practiceEls.result.hidden = true;
     practiceEls.result.textContent = "";
     practiceEls.result.className = "ending-result";
     practiceEls.interim.textContent = "";
@@ -391,6 +392,7 @@ async function main(): Promise<void> {
     const success = judgePractice(input);
     practiceEls.result.textContent = success ? m.practice.success : m.practice.failure;
     practiceEls.result.className = `ending-result ${success ? "clear" : "fail"}`;
+    practiceEls.result.hidden = false;
     practiceEls.message.textContent = `"${input}"`;
     practiceEls.message.hidden = false;
     practiceEls.interim.textContent = "";
@@ -417,6 +419,7 @@ async function main(): Promise<void> {
       } else {
         practiceEls.result.textContent = m.judge.noVoice;
         practiceEls.result.className = "ending-result fail";
+        practiceEls.result.hidden = false;
       }
     } catch (err) {
       practiceEls.micLabel.textContent = m.practice.micLabel;
@@ -432,6 +435,7 @@ async function main(): Promise<void> {
         practiceEls.result.textContent = `${m.judge.generic} (${msg})`;
       }
       practiceEls.result.className = "ending-result fail";
+      practiceEls.result.hidden = false;
     }
   });
 
