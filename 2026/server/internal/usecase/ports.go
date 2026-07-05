@@ -16,15 +16,32 @@ type JudgeResult struct {
 	Reason  string // 判定理由(子供向け)。ライフ変化の根拠を示す
 }
 
+// AdventureEvent はエンディング要約の材料になる1手の記録。
+type AdventureEvent struct {
+	StageIndex int
+	Spoken     string
+	Verdict    string
+	Reason     string
+}
+
 // LLMJudgeGateway はステージ判定を行う外部 LLM の能力ポート。
 // (vendor 名を含めず capability 指向 — Gemini 実装は infra 側)
 type LLMJudgeGateway interface {
 	Judge(ctx context.Context, stage domain.Stage, input string, lang domain.Lang) (JudgeResult, error)
 }
 
-// StoryGenerator はエンディング毎のストーリー文を生成する。
+// StoryInput はエンディング要約生成の入力。
+type StoryInput struct {
+	EndingType domain.EndingType
+	Lives      domain.Lives
+	Route      domain.DragonRoute
+	Lang       domain.Lang
+	History    []AdventureEvent
+}
+
+// StoryGenerator は冒険履歴からエンディング要約を生成する外部 LLM の能力ポート。
 type StoryGenerator interface {
-	Generate(ctx context.Context, t domain.EndingType, lives domain.Lives, route domain.DragonRoute, lang domain.Lang) (string, error)
+	Generate(ctx context.Context, input StoryInput) (string, error)
 }
 
 // Image は生成された画像のバイト列と MIME。

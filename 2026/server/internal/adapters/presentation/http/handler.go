@@ -84,6 +84,21 @@ func (h *Handler) Ending(w http.ResponseWriter, r *http.Request) {
 		FinalAction: req.FinalAction,
 		Cleared:     req.Cleared,
 		Lang:        domain.NormalizeLang(req.Lang),
+		History: func() []usecase.AdventureEvent {
+			if len(req.History) == 0 {
+				return nil
+			}
+			history := make([]usecase.AdventureEvent, 0, len(req.History))
+			for _, item := range req.History {
+				history = append(history, usecase.AdventureEvent{
+					StageIndex: item.StageIndex,
+					Spoken:     item.Spoken,
+					Verdict:    item.Verdict,
+					Reason:     item.Reason,
+				})
+			}
+			return history
+		}(),
 	}, req.SessionID)
 	if err != nil {
 		writeDomainError(w, err)
@@ -113,14 +128,14 @@ func (h *Handler) Result(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ResultResponse{
 		EndingType: string(e.EndingType),
 		Story:      e.Story,
-		ImageURL:   func() string {
+		ImageURL: func() string {
 			if e.ImageFile != "" {
 				return h.imageURL(e.ImageFile)
 			}
 			return h.endingImageURL(e.EndingType)
 		}(),
-		ResultURL:  h.resultURL(e.ID),
-		CreatedAt:  e.CreatedAt,
+		ResultURL: h.resultURL(e.ID),
+		CreatedAt: e.CreatedAt,
 	})
 }
 

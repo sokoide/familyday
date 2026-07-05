@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/sokoide/familyday/server/internal/domain"
+	"github.com/sokoide/familyday/server/internal/usecase"
 	"google.golang.org/genai"
 )
 
@@ -16,22 +17,22 @@ type StoryGenerator struct {
 
 func NewStoryGenerator(c *Client) *StoryGenerator { return &StoryGenerator{c: c} }
 
-func (s *StoryGenerator) Generate(ctx context.Context, t domain.EndingType, _ domain.Lives, _ domain.DragonRoute, lang domain.Lang) (string, error) {
+func (s *StoryGenerator) Generate(ctx context.Context, input usecase.StoryInput) (string, error) {
 	cfg := &genai.GenerateContentConfig{
-		SystemInstruction: &genai.Content{Parts: []*genai.Part{{Text: "あなたは子供向け絵本の文を書く作家です。"}}},
+		SystemInstruction: &genai.Content{Parts: []*genai.Part{{Text: storySystemPrompt(input.Lang)}}},
 		SafetySettings:    safetySettings(),
 		ThinkingConfig:    &genai.ThinkingConfig{ThinkingBudget: thinkingBudgetTokens()},
 	}
 	contents := []*genai.Content{
-		{Role: "user", Parts: []*genai.Part{{Text: storyPrompt(t, lang)}}},
+		{Role: "user", Parts: []*genai.Part{{Text: storyPrompt(input)}}},
 	}
 	resp, err := s.c.client.Models.GenerateContent(ctx, s.c.cfg.ModelStory, contents, cfg)
 	if err != nil {
-		return "", fmt.Errorf("gemini story: %w", err)
+		return "", fmt.Errorf("%w: gemini story: %v", domain.ErrUpstream, err)
 	}
 	text, err := firstText(resp)
 	if err != nil {
-		return "", fmt.Errorf("gemini story empty: %w", err)
+		return "", fmt.Errorf("%w: gemini story empty: %v", domain.ErrUpstream, err)
 	}
 	return strings.TrimSpace(text), nil
 }

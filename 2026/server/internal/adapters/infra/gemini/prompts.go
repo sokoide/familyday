@@ -107,17 +107,47 @@ type judgeJSON struct {
 	Reason  string `json:"reason"`
 }
 
-// storyPrompt はエンディング毎のストーリー生成指示。lang で出力言語を指定。
-func storyPrompt(t domain.EndingType, lang domain.Lang) string {
-	base := fmt.Sprintf("子供向けファンタジーゲームブックの結末を、明るく・前向きに・子供がワクワクするように1文で書いてください。出力は %s で。", lang.Name())
-	switch t {
-	case domain.EndingGreat:
-		return base + "\n結末: 伝説の勇者。ドラゴンと仲良くなるかノーダメージで完全勝利し、お姫様と盛大なパーティー。"
-	case domain.EndingSuccess:
-		return base + "\n結末: がんばった勇者。けがをしながらもドラゴンを撃退し、お姫様を救出。城の人に感謝される。"
-	default:
-		return base + "\n結末: また挑戦してね。コミカルに追いかけられて城の外へ脱出。お姫様が窓から「また助けに来てね!」と手を振る。悲しい響きを入れないこと。"
+func storySystemPrompt(lang domain.Lang) string {
+	if lang == domain.LangEN {
+		return "You are a writer of children's fantasy gamebook endings. Write a short, warm, vivid ending summary."
 	}
+	return "あなたは子供向けファンタジーゲームブックの結末を書く作家です。短く、あたたかく、わくわくする要約を書いてください。"
+}
+
+// storyPrompt は冒険履歴をもとにエンディング要約を作る指示文。
+func storyPrompt(input usecase.StoryInput) string {
+	var b strings.Builder
+	if input.Lang == domain.LangEN {
+		b.WriteString("Summarize the adventure below into 1-2 short sentences for children.\n")
+	} else {
+		b.WriteString("以下の冒険を、子供向けに1〜2文でやさしく要約してください。\n")
+	}
+	fmt.Fprintf(&b, "Language: %s\n", input.Lang.Name())
+	fmt.Fprintf(&b, "Ending type: %s\n", input.EndingType)
+	fmt.Fprintf(&b, "Lives remaining: %d\n", int(input.Lives))
+	fmt.Fprintf(&b, "Dragon route: %s\n", input.Route)
+	if input.Lang == domain.LangEN {
+		b.WriteString("\nAdventure log:\n")
+	} else {
+		b.WriteString("\nこれまでのぼうけん:\n")
+	}
+	if len(input.History) == 0 {
+		if input.Lang == domain.LangEN {
+			b.WriteString("- No history was recorded.\n")
+		} else {
+			b.WriteString("- まだ記録がありません。\n")
+		}
+	} else {
+		for _, h := range input.History {
+			fmt.Fprintf(&b, "- Stage %d: \"%s\" / verdict=%s / reason=%s\n", h.StageIndex+1, h.Spoken, h.Verdict, h.Reason)
+		}
+	}
+	if input.Lang == domain.LangEN {
+		b.WriteString("\nRequirements:\n- Keep it positive and child-friendly.\n- Mention the player's spoken actions naturally.\n- Do not add bullet points or explanations.\n")
+	} else {
+		b.WriteString("\n条件:\n- 前向きで子供向けにする\n- ユーザーの発言内容を自然に反映する\n- 箇条書きや説明文は出さない\n")
+	}
+	return b.String()
 }
 
 func indent(s string) string {

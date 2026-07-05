@@ -4,6 +4,7 @@
 
 # build output
 2026/server/static/
+2026/server/bin/
 2026/web/dist/
 
 # runtime data (生成物・永続化)

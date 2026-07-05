@@ -21,11 +21,19 @@ type JudgeResponse struct {
 
 // ending
 type EndingRequest struct {
-	Lives       int    `json:"lives"`
-	FinalAction string `json:"finalAction"` // defeat|befriend|gameover
-	Cleared     bool   `json:"cleared"`
-	SessionID   string `json:"sessionId"`
-	Lang        string `json:"lang"` // "ja"|"en"。ストーリーの言語
+	Lives       int              `json:"lives"`
+	FinalAction string           `json:"finalAction"` // defeat|befriend|gameover
+	Cleared     bool             `json:"cleared"`
+	SessionID   string           `json:"sessionId"`
+	Lang        string           `json:"lang"` // "ja"|"en"。ストーリーの言語
+	History     []AdventureEvent `json:"history"`
+}
+
+type AdventureEvent struct {
+	StageIndex int    `json:"stageIndex"`
+	Spoken     string `json:"spoken"`
+	Verdict    string `json:"verdict"`
+	Reason     string `json:"reason"`
 }
 
 type EndingResponse struct {

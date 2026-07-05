@@ -27,13 +27,16 @@ type stubRepo struct {
 	e   domain.Ending
 	err error
 }
-type stubStory struct{ text string }
+type stubStory struct {
+	out string
+	err error
+}
 
 func (s *stubJudge) Judge(ctx context.Context, st domain.Stage, in string, lang domain.Lang) (usecase.JudgeResult, error) {
 	return usecase.JudgeResult{Verdict: s.out.Verdict, Route: domain.DragonRoute(s.out.Route), Message: s.out.Message}, s.err
 }
-func (s *stubStory) Generate(ctx context.Context, t domain.EndingType, l domain.Lives, r domain.DragonRoute, lang domain.Lang) (string, error) {
-	return s.text, nil
+func (s *stubStory) Generate(ctx context.Context, in usecase.StoryInput) (string, error) {
+	return s.out, s.err
 }
 func (s *stubRepo) Save(ctx context.Context, e domain.Ending, img usecase.Image) error { return nil }
 func (s *stubRepo) Load(ctx context.Context, id string) (domain.Ending, error)         { return s.e, s.err }
@@ -49,7 +52,7 @@ func (f *fakeClock) NowISO() string                            { return f.ts }
 func newHandlerWithStubs(t *testing.T, judgeOut usecase.JudgeOutput, judgeErr error, ending domain.Ending, loadErr error) *Handler {
 	t.Helper()
 	juc := usecase.NewJudgeUseCase(&stubJudge{out: judgeOut, err: judgeErr}, &fakeLimiter{allow: true})
-	euc := usecase.NewEndingUseCase(&stubStory{text: "s"}, &stubRepo{e: ending, err: loadErr}, &fakeLimiter{allow: true}, &fakeID{id: "abc"}, &fakeClock{ts: "ts"}, usecase.NopLogger{})
+	euc := usecase.NewEndingUseCase(&stubStory{out: "story"}, &stubRepo{e: ending, err: loadErr}, &fakeLimiter{allow: true}, &fakeID{id: "abc"}, &fakeClock{ts: "ts"}, usecase.NopLogger{})
 	return NewHandler(juc, euc, "https://example.com")
 }
 

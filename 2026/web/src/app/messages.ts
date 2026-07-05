@@ -189,15 +189,15 @@ const ja: Messages = {
   },
   ending: {
     titles: {
-      great: "🏆 でんせつの ゆうしゃ エンド!",
-      success: "✨ がんばった ゆうしゃ エンド!",
-      gameover: "😢 また ちょうせんしてね エンド!"
+      great: "🏆 でんせつの...",
+      success: "✨ がんばった...",
+      gameover: "💀 バッドエンド"
     },
-    fallbackEmoji: { great: "🏆", success: "✨", gameover: "😢" },
+    fallbackEmoji: { great: "🏆", success: "✨", gameover: "💀" },
     shortLabel: {
-      great: "でんせつの ゆうしゃ",
-      success: "がんばった ゆうしゃ",
-      gameover: "また ちょうせんしてね"
+      great: "でんせつの...",
+      success: "がんばった...",
+      gameover: "バッドエンド"
     },
     fallbackTitle: "ぼうけん おわり!",
     fallbackStory:
@@ -309,13 +309,13 @@ const en: Messages = {
     titles: {
       great: "🏆 Legendary Hero Ending!",
       success: "✨ Brave Hero Ending!",
-      gameover: "😢 Try Again Ending!"
+      gameover: "💀 Bad End"
     },
-    fallbackEmoji: { great: "🏆", success: "✨", gameover: "😢" },
+    fallbackEmoji: { great: "🏆", success: "✨", gameover: "💀" },
     shortLabel: {
       great: "Legendary Hero",
       success: "Brave Hero",
-      gameover: "Try Again"
+      gameover: "Bad End"
     },
     fallbackTitle: "Adventure Over!",
     fallbackStory: "The connection seems weak. Please ask the staff.",

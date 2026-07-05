@@ -26,6 +26,12 @@ export interface EndingInput {
   cleared: boolean;
   sessionId: string;
   lang: "ja" | "en";
+  history: Array<{
+    stageIndex: number;
+    spoken: string;
+    verdict: string;
+    reason: string;
+  }>;
 }
 
 export interface EndingResult {

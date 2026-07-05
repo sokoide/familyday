@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/sokoide/familyday/server/internal/domain"
 )
@@ -13,6 +14,7 @@ type EndingInput struct {
 	FinalAction string // "defeat"|"befriend"|"gameover"
 	Cleared     bool
 	Lang        domain.Lang
+	History     []AdventureEvent
 }
 
 // EndingOutput はエンディング生成結果。URL の絶対化は Presentation 層が行う。
@@ -31,10 +33,14 @@ type EndingUseCase struct {
 	lim   RateLimiter
 	idgen IDGenerator
 	clock Clock
+	log   Logger
 }
 
-func NewEndingUseCase(s StoryGenerator, r EndingRepository, l RateLimiter, id IDGenerator, c Clock, _ Logger) *EndingUseCase {
-	return &EndingUseCase{story: s, repo: r, lim: l, idgen: id, clock: c}
+func NewEndingUseCase(s StoryGenerator, r EndingRepository, l RateLimiter, id IDGenerator, c Clock, log Logger) *EndingUseCase {
+	if log == nil {
+		log = NopLogger{}
+	}
+	return &EndingUseCase{story: s, repo: r, lim: l, idgen: id, clock: c, log: log}
 }
 
 func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID string) (EndingOutput, error) {
@@ -60,11 +66,19 @@ func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID s
 	endingType := domain.DecideEnding(lives, in.Cleared, route)
 
 	id := u.idgen.NewID()
-
-	// ストーリー生成(失敗時はフォールバック文)
-	story, err := u.story.Generate(ctx, endingType, lives, route, in.Lang)
-	if err != nil {
-		story = fallbackStory(endingType, in.Lang)
+	story := fallbackStory(endingType, in.Lang)
+	if u.story != nil {
+		if generated, err := u.story.Generate(ctx, StoryInput{
+			EndingType: endingType,
+			Lives:      lives,
+			Route:      route,
+			Lang:       in.Lang,
+			History:    in.History,
+		}); err != nil {
+			u.log.Printf("ending: story generate failed (type=%s route=%s): %v", endingType, route, err)
+		} else if s := strings.TrimSpace(generated); s != "" {
+			story = s
+		}
 	}
 
 	ending := domain.Ending{
@@ -106,10 +120,10 @@ func fallbackStory(t domain.EndingType, lang domain.Lang) string {
 	}
 	switch t {
 	case domain.EndingGreat:
-		return "勇者は見事な呪文を唱え、ドラゴンと仲良くなって街へ帰りました。お姫様と盛大なパーティーが始まります!"
+		return "勇者は見事にドラゴンと仲良くなり、街へ帰りました。お姫様と盛大なパーティーが始まります!"
 	case domain.EndingSuccess:
 		return "満身創痍になりながらも、勇者はドラゴンを撃退し、お姫様を無事に救出しました。城のみんなが「ありがとう!」と叫びます。"
 	default:
-		return "ドラゴンに追いかけられて、勇者は一度お城の外へ脱出!お姫様が窓から「また助けに来てねー!」と手を振っています。"
+		return "勇者はドラゴンに追いかけられて、お城の外へ脱出!お姫様が窓から「また助けに来てねー!」と手を振っています。"
 	}
 }

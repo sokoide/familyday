@@ -134,6 +134,7 @@ async function main(): Promise<void> {
   const resultApi = new FetchResultApi();
   const speech = new WebSpeechRecognizer();
   const timer = createTimer();
+  let currentEnding: EndingResult | null = null;
 
   let lang: Lang = loadLang();
   let m = getMessages(lang);
@@ -169,6 +170,7 @@ async function main(): Promise<void> {
     endingTitle: $("ending-title"),
     endingImage: $("ending-image") as HTMLImageElement,
     endingResult: $("ending-result") as HTMLElement,
+    endingStory: $("ending-story") as HTMLElement,
     endingHistoryTitle: $("ending-history-title") as HTMLElement,
     endingHistory: $("ending-history") as HTMLUListElement,
     emailInput: $("email-input") as HTMLInputElement,
@@ -183,6 +185,7 @@ async function main(): Promise<void> {
     lang = state.lang;
     m = getMessages(lang);
     applyI18n(m);
+    currentEnding = saved.endingResult ?? null;
 
     els.lives.textContent = hearts(state.lives);
     els.micLabel.textContent = m.input.micLabel;
@@ -285,6 +288,7 @@ async function main(): Promise<void> {
     // ぼうけんを1からやり直す: history・エンディング・sessionStorage を完全クリア
     clearSession();
     state = initialState(newSessionId(), lang);
+    currentEnding = null;
     els.lives.textContent = hearts(state.lives);
     els.timer.textContent = formatTime(TOTAL_SECONDS);
     els.history.textContent = m.judge.historyEmpty;
@@ -292,6 +296,7 @@ async function main(): Promise<void> {
     els.endingImage.src = "";
     els.endingTitle.textContent = "";
     els.endingResult.textContent = "";
+    els.endingStory.textContent = "";
     // エンディングで無効化したマイク・入力を再度有効化
     if (speech.isSupported()) {
       els.mic.disabled = false;
@@ -683,14 +688,22 @@ async function main(): Promise<void> {
         cleared: kind.cleared,
         sessionId: state.sessionId,
         lang: state.lang,
+        history: state.history.map((h) => ({
+          stageIndex: h.stageIndex,
+          spoken: h.spoken,
+          verdict: h.verdict,
+          reason: h.reason,
+        })),
       });
       renderEnding(res);
       saveSession(state, res);
     } catch {
       // エラー時もフォールバック表示(通信エラー時は failed.jpg)
+      currentEnding = null;
       els.endingTitle.textContent = m.ending.netErrorTitle;
       els.endingResult.textContent = m.ending.failedLabel;
       els.endingResult.className = "ending-result fail";
+      els.endingStory.textContent = m.ending.netErrorStory;
       els.endingImage.src = "/images/failed.jpg";
       els.endingImage.alt = m.ending.shortLabel.gameover;
       els.endingImage.onerror = () => {
@@ -700,6 +713,7 @@ async function main(): Promise<void> {
   }
 
   function renderEnding(res: EndingResult): void {
+    currentEnding = res;
     els.endingTitle.textContent = m.ending.titles[res.endingType] ?? m.ending.fallbackTitle;
 
     // 固定のエンディング画像(public/images/{successful,failed}.jpg)を表示。
@@ -709,6 +723,7 @@ async function main(): Promise<void> {
     els.endingImage.alt = isClear ? m.ending.shortLabel.success : m.ending.shortLabel.gameover;
     els.endingResult.textContent = isClear ? m.ending.clearedLabel : m.ending.failedLabel;
     els.endingResult.className = `ending-result ${isClear ? "clear" : "fail"}`;
+    els.endingStory.textContent = res.story;
     els.endingImage.onerror = () => {
       els.endingImage.src = fallbackImage(
         m.ending.fallbackEmoji[res.endingType],
@@ -720,10 +735,14 @@ async function main(): Promise<void> {
   }
 
   // 冒険記録メールの本文を組み立てる
-  function buildAdventureBody(endingType: EndingType): string[] {
+  function buildAdventureBody(endingType: EndingType, story: string): string[] {
     const lines: string[] = [];
     lines.push(m.ending.emailBody);
     lines.push("");
+    if (story.trim()) {
+      lines.push(story.trim());
+      lines.push("");
+    }
     lines.push(m.ending.adventureHeader);
     // ステージ毎の発言と判定を記録
     for (const h of state.history) {
@@ -759,7 +778,10 @@ async function main(): Promise<void> {
     const endingType = endingKind(state).cleared
       ? (state.dragonRoute === "befriend" ? "great" : "success")
       : "gameover";
-    const bodyLines = buildAdventureBody(endingType as EndingType);
+    const bodyLines = buildAdventureBody(
+      endingType as EndingType,
+      currentEnding?.story ?? "",
+    );
     location.href = buildAdventureMailto(email, m.ending.emailSubject, bodyLines);
   });
 
@@ -767,6 +789,7 @@ async function main(): Promise<void> {
   els.restart.addEventListener("click", () => {
     clearSession();
     state = initialState(newSessionId(), lang);
+    currentEnding = null;
     els.lives.textContent = hearts(state.lives);
     els.timer.textContent = formatTime(300);
     els.emailInput.value = "";
@@ -774,6 +797,7 @@ async function main(): Promise<void> {
     // 履歴・トースト・判定メッセージをクリア
     els.history.textContent = m.judge.historyEmpty;
     els.endingHistory.textContent = m.judge.historyEmpty;
+    els.endingStory.textContent = "";
     els.judgeReason.hidden = true;
     // エンディングで無効化したマイクを再有効化(intro → btn-start でも再設定される)
     if (speech.isSupported()) {
@@ -797,6 +821,7 @@ async function renderResultPage(
         <h2 id="rv-title" class="ending-title">${m.ending.loading}</h2>
         <img id="rv-image" class="ending-image" alt="" />
         <p id="rv-result" class="ending-result"></p>
+        <p id="rv-story" class="ending-story"></p>
       </div>
       <div class="share-area" style="margin-top: 2rem;">
         <div class="email-box">
@@ -809,6 +834,7 @@ async function renderResultPage(
   const title = document.getElementById("rv-title")!;
   const img = document.getElementById("rv-image") as HTMLImageElement;
   const result = document.getElementById("rv-result")!;
+  const story = document.getElementById("rv-story")!;
 
   const emailInput = document.getElementById("email-input") as HTMLInputElement;
   const emailBtn = document.getElementById("btn-email") as HTMLButtonElement;
@@ -824,6 +850,7 @@ async function renderResultPage(
     img.alt = isClear ? m.ending.shortLabel.success : m.ending.shortLabel.gameover;
     result.textContent = isClear ? m.ending.clearedLabel : m.ending.failedLabel;
     result.className = `ending-result ${isClear ? "clear" : "fail"}`;
+    story.textContent = r.story;
     img.onerror = () => {
       img.src = fallbackImage(m.ending.fallbackEmoji[t], m.ending.shortLabel[t]);
     };
@@ -838,6 +865,11 @@ async function renderResultPage(
       const bodyLines = [
         m.ending.emailBody,
         "",
+      ];
+      if (r.story.trim()) {
+        bodyLines.push(r.story.trim(), "");
+      }
+      bodyLines.push(
         isClear ? m.ending.clearedLabel : m.ending.failedLabel,
         "",
         `${IMAGE_BASE}/s1.jpg`,
@@ -847,7 +879,7 @@ async function renderResultPage(
         `${IMAGE_BASE}/${isClear ? "successful" : "failed"}.jpg`,
         "",
         MAIL_SIGNATURE,
-      ];
+      );
       location.href = buildAdventureMailto(email, m.ending.emailSubject, bodyLines);
     });
   } catch {

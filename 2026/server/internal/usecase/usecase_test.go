@@ -14,10 +14,13 @@ type fakeJudge struct {
 	result JudgeResult
 	err    error
 }
-type fakeStory struct{ text string }
 type fakeRepo struct {
 	saved   map[string]domain.Ending
 	saveErr error
+}
+type fakeStory struct {
+	out string
+	err error
 }
 type fakeLimiter struct{ allow bool }
 type fakeID struct{ id string }
@@ -25,9 +28,6 @@ type fakeClock struct{ ts string }
 
 func (f *fakeJudge) Judge(ctx context.Context, s domain.Stage, input string, lang domain.Lang) (JudgeResult, error) {
 	return f.result, f.err
-}
-func (f *fakeStory) Generate(ctx context.Context, t domain.EndingType, l domain.Lives, r domain.DragonRoute, lang domain.Lang) (string, error) {
-	return f.text, nil
 }
 func (f *fakeRepo) Save(ctx context.Context, e domain.Ending, img Image) error {
 	if f.saveErr != nil {
@@ -44,6 +44,9 @@ func (f *fakeRepo) Load(ctx context.Context, id string) (domain.Ending, error) {
 		return e, nil
 	}
 	return domain.Ending{}, domain.ErrNotFound
+}
+func (f *fakeStory) Generate(ctx context.Context, input StoryInput) (string, error) {
+	return f.out, f.err
 }
 func (f *fakeLimiter) Allow(ctx context.Context, key string, lim int) bool { return f.allow }
 func (f *fakeID) NewID() string                                            { return f.id }
@@ -87,7 +90,7 @@ func TestJudgeUseCase_RateLimited(t *testing.T) {
 func TestEndingUseCase_Great(t *testing.T) {
 	repo := &fakeRepo{}
 	uc := NewEndingUseCase(
-		&fakeStory{text: "story"},
+		&fakeStory{out: "story"},
 		repo,
 		&fakeLimiter{allow: true},
 		&fakeID{id: "abc123"},
@@ -111,7 +114,7 @@ func TestEndingUseCase_Great(t *testing.T) {
 
 func TestEndingUseCase_GameOver(t *testing.T) {
 	uc := NewEndingUseCase(
-		&fakeStory{text: "s"},
+		&fakeStory{out: "story"},
 		&fakeRepo{},
 		&fakeLimiter{allow: true},
 		&fakeID{id: "x"},
@@ -128,10 +131,10 @@ func TestEndingUseCase_GameOver(t *testing.T) {
 }
 
 func TestEndingUseCase_ImageFailureFallback(t *testing.T) {
-	// 画像生成が無いことの回帰確認。ストーリー生成・保存は成功する。
+	// ストーリーは固定文で返り、保存も成功する。
 	repo := &fakeRepo{}
 	uc := NewEndingUseCase(
-		&fakeStory{text: "story-ok"},
+		&fakeStory{out: "story"},
 		repo,
 		&fakeLimiter{allow: true},
 		&fakeID{id: "id1"},
@@ -142,8 +145,8 @@ func TestEndingUseCase_ImageFailureFallback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if out.Story != "story-ok" {
-		t.Errorf("story should come from generator, got %q", out.Story)
+	if out.Story == "" {
+		t.Error("story should not be empty")
 	}
 	if _, ok := repo.saved["id1"]; !ok {
 		t.Error("should still save")
