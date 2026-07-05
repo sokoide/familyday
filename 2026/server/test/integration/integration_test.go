@@ -1,7 +1,7 @@
 //go:build integration
 
 // Package integration は E2E の統合テスト。
-// 実際の Gemini/Imagen API を叩く HTTP サーバを httptest で立て、
+// 実際の Gemini API を叩く HTTP サーバを httptest で立て、
 // API エンドポイント経由で判定〜エンディング生成までを検証する。
 //
 // 実行:
@@ -23,10 +23,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/sokoide/familyday/server/internal/adapters/infra/gemini"
 	"github.com/sokoide/familyday/server/internal/app"
@@ -137,7 +135,7 @@ func TestIntegration_Judge_InvalidInput(t *testing.T) {
 }
 
 // TestIntegration_Ending はエンディング生成が画像/結果URLを返すこと。
-// Imagen は時間がかかる/失敗しうるため、ストーリーとURL形式を主眼に検証。
+// ストーリーとURL形式を主眼に検証。
 func TestIntegration_Ending(t *testing.T) {
 	srv := newServer(t)
 	res := postJSON(t, srv, "/api/ending", map[string]any{
@@ -178,45 +176,6 @@ func TestIntegration_Ending(t *testing.T) {
 	body, _ := io.ReadAll(got.Body)
 	if !strings.Contains(string(body), id) {
 		t.Errorf("result body does not contain id: %s", body)
-	}
-}
-
-// TestIntegration_ImageFileWritten はエンディング生成後、画像ファイルが実体化すること。
-// ※ Imagen が失敗した場合はファイル無し(フォールバック)で、スキップ扱い。
-func TestIntegration_ImageFileWritten(t *testing.T) {
-	apiKey := requireAPIKey(t)
-	dataDir := t.TempDir()
-	mux, err := app.BuildMux(context.Background(), app.Options{
-		APIKey:    apiKey,
-		BaseURL:   "https://integration.test",
-		DataDir:   dataDir,
-		StaticDir: t.TempDir(),
-		GeminiCfg: gemini.DefaultConfig(),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	srv := httptest.NewServer(mux)
-	t.Cleanup(srv.Close)
-
-	res := postJSON(t, srv, "/api/ending", map[string]any{
-		"lives": 2, "finalAction": "defeat", "cleared": true, "sessionId": "img", "lang": "ja",
-	})
-	id, _ := res["endingId"].(string)
-	if id == "" {
-		t.Fatal("empty endingId")
-	}
-	// 生成は非同期ではないが、画像書き出しは同期的。少し待って確認。
-	imgPath := filepath.Join(dataDir, "generated", id+".png")
-	deadline := time.Now().Add(2 * time.Second)
-	for {
-		if _, err := os.Stat(imgPath); err == nil {
-			return // ファイルあり → 成功
-		}
-		if time.Now().After(deadline) {
-			t.Skipf("imagen likely failed or slow; image not written: %s", imgPath)
-		}
-		time.Sleep(100 * time.Millisecond)
 	}
 }
 

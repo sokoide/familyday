@@ -20,7 +20,7 @@ import (
 type Options struct {
 	APIKey    string
 	BaseURL   string
-	DataDir   string // エンディングJSON・生成画像のルート
+	DataDir   string // エンディングJSONのルート
 	StaticDir string // フロントビルド成果物
 	GeminiCfg gemini.Config
 }
@@ -34,7 +34,6 @@ func BuildMux(ctx context.Context, opts Options) (http.Handler, error) {
 
 	repo, err := persistence.NewEndingRepo(
 		filepath.Join(opts.DataDir, "endings"),
-		filepath.Join(opts.DataDir, "generated"),
 	)
 	if err != nil {
 		return nil, err
@@ -58,7 +57,6 @@ func BuildMux(ctx context.Context, opts Options) (http.Handler, error) {
 	mux.HandleFunc("/api/judge", h.Judge)
 	mux.HandleFunc("/api/ending", h.Ending)
 	mux.HandleFunc("/api/result/", h.Result)
-	mux.Handle("/img/", http.StripPrefix("/img/", safeFileServer(filepath.Join(opts.DataDir, "generated"))))
 	mux.HandleFunc("/", spaHandler(opts.StaticDir, opts.BaseURL))
 	return mux, nil
 }

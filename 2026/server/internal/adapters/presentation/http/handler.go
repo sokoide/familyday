@@ -23,13 +23,6 @@ func NewHandler(j *usecase.JudgeUseCase, e *usecase.EndingUseCase, baseURL strin
 	return &Handler{judge: j, ending: e, baseURL: baseURL}
 }
 
-// imageUrl / resultUrl を絶対URLで構築。
-func (h *Handler) imageURL(file string) string {
-	if file == "" {
-		return ""
-	}
-	return h.baseURL + "/img/" + path.Base(file)
-}
 func (h *Handler) resultURL(id string) string {
 	return h.baseURL + "/r/" + path.Base(id)
 }
@@ -45,7 +38,11 @@ func (h *Handler) Judge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req JudgeRequest
-	if err := decodeJSON(r, &req); err != nil {
+	if err := decodeJSON(w, r, &req); err != nil {
+		if errors.Is(err, errRequestTooLarge) {
+			writeError(w, http.StatusRequestEntityTooLarge, "request too large", err.Error())
+			return
+		}
 		writeError(w, http.StatusBadRequest, "invalid json", err.Error())
 		return
 	}
@@ -75,7 +72,11 @@ func (h *Handler) Ending(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req EndingRequest
-	if err := decodeJSON(r, &req); err != nil {
+	if err := decodeJSON(w, r, &req); err != nil {
+		if errors.Is(err, errRequestTooLarge) {
+			writeError(w, http.StatusRequestEntityTooLarge, "request too large", err.Error())
+			return
+		}
 		writeError(w, http.StatusBadRequest, "invalid json", err.Error())
 		return
 	}
@@ -128,23 +129,27 @@ func (h *Handler) Result(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ResultResponse{
 		EndingType: string(e.EndingType),
 		Story:      e.Story,
-		ImageURL: func() string {
-			if e.ImageFile != "" {
-				return h.imageURL(e.ImageFile)
-			}
-			return h.endingImageURL(e.EndingType)
-		}(),
-		ResultURL: h.resultURL(e.ID),
-		CreatedAt: e.CreatedAt,
+		ImageURL:   h.endingImageURL(e.EndingType),
+		ResultURL:  h.resultURL(e.ID),
+		CreatedAt:  e.CreatedAt,
 	})
 }
 
 // --- helpers ---
 
-func decodeJSON(r *http.Request, v any) error {
+var errRequestTooLarge = errors.New("request body too large")
+
+func decodeJSON(w http.ResponseWriter, r *http.Request, v any) error {
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
-	return dec.Decode(v)
+	if err := dec.Decode(v); err != nil {
+		if strings.Contains(err.Error(), "http: request body too large") {
+			return errRequestTooLarge
+		}
+		return err
+	}
+	return nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {

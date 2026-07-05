@@ -29,7 +29,7 @@ type fakeClock struct{ ts string }
 func (f *fakeJudge) Judge(ctx context.Context, s domain.Stage, input string, lang domain.Lang) (JudgeResult, error) {
 	return f.result, f.err
 }
-func (f *fakeRepo) Save(ctx context.Context, e domain.Ending, img Image) error {
+func (f *fakeRepo) Save(ctx context.Context, e domain.Ending) error {
 	if f.saveErr != nil {
 		return f.saveErr
 	}

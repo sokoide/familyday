@@ -14,8 +14,8 @@ type UUIDGen struct{}
 func (UUIDGen) NewID() string {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		// rand.Read 失敗は極めて稀。フォールバックは時刻ベース。
-		return hex.EncodeToString([]byte(time.Now().Format("20060102150405000000000")))
+		// crypto/rand が使えないなら、予測可能なIDを返さず即座に落とす。
+		panic("crypto/rand unavailable")
 	}
 	return hex.EncodeToString(b[:]) // 32文字
 }

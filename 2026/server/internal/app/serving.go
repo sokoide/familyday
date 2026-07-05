@@ -8,18 +8,6 @@ import (
 	"strings"
 )
 
-// safeFileServer は指定ディレクトリ配下のみ配信する(パストラバーサル対策)。
-func safeFileServer(dir string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		name := filepath.Base(r.URL.Path)
-		if name == "" || name == "/" || name == "." {
-			http.NotFound(w, r)
-			return
-		}
-		http.ServeFile(w, r, filepath.Join(dir, name))
-	})
-}
-
 // spaHandler は静的ファイルを配信し、未存在パスは index.html にフォールバックする(/r/{id} 用)。
 // index.html には PUBLIC_BASE_URL 由来の image base を埋め込む。
 func spaHandler(staticDir, baseURL string) http.HandlerFunc {

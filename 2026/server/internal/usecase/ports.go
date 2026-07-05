@@ -44,16 +44,9 @@ type StoryGenerator interface {
 	Generate(ctx context.Context, input StoryInput) (string, error)
 }
 
-// Image は生成された画像のバイト列と MIME。
-type Image struct {
-	Bytes []byte
-	MIME  string // "image/png"
-}
-
 // EndingRepository はエンディング結果の永続化を行うポート。
-// img が空(Bytes 空)の場合はメタデータのみ保存し、Presentation が fallback 画像を指す。
 type EndingRepository interface {
-	Save(ctx context.Context, e domain.Ending, img Image) error
+	Save(ctx context.Context, e domain.Ending) error
 	Load(ctx context.Context, id string) (domain.Ending, error)
 }
 
@@ -74,7 +67,6 @@ type Clock interface {
 }
 
 // Logger は usecase 層からの診断ログ用ポート(副作用)。infra が実装する。
-// 画像生成失敗など、上位へ伝播させないが運用で見たい事象を記録する。
 type Logger interface {
 	Printf(format string, args ...any)
 }

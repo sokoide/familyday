@@ -10,6 +10,7 @@ import {
   endingKind,
   forceEnding,
   initialState,
+  start,
   type GameState,
 } from "./state";
 import { createTimer, formatTime } from "./timer";
@@ -63,8 +64,12 @@ function loadSession(): SavedSession | null {
 }
 
 function clearSession(): void {
-  sessionStorage.removeItem(SESSION_STATE_KEY);
-  sessionStorage.removeItem(SESSION_ENDING_KEY);
+  try {
+    sessionStorage.removeItem(SESSION_STATE_KEY);
+    sessionStorage.removeItem(SESSION_ENDING_KEY);
+  } catch (e) {
+    console.error("Failed to clear session state:", e);
+  }
 }
 
 function $(id: string): HTMLElement {
@@ -135,12 +140,20 @@ async function main(): Promise<void> {
   const speech = new WebSpeechRecognizer();
   const timer = createTimer();
   let currentEnding: EndingResult | null = null;
+  let pendingAdvanceTimer: number | null = null;
 
   let lang: Lang = loadLang();
   let m = getMessages(lang);
   applyI18n(m);
 
   let state = initialState(newSessionId(), lang);
+
+  function clearPendingAdvanceTimer(): void {
+    if (pendingAdvanceTimer !== null) {
+      window.clearTimeout(pendingAdvanceTimer);
+      pendingAdvanceTimer = null;
+    }
+  }
 
   // --- /r/{id} ルート: 結果復元ビュー ---
   const pathMatch = location.pathname.match(/^\/r\/([^/]+)$/);
@@ -226,6 +239,10 @@ async function main(): Promise<void> {
         },
         () => {
           state = forceEnding(state);
+          clearPendingAdvanceTimer();
+          els.mic.disabled = true;
+          els.manualBtn.disabled = true;
+          els.micLabel.textContent = m.input.ended;
           saveSession(state);
           void goEnding();
         },
@@ -287,8 +304,9 @@ async function main(): Promise<void> {
   document.getElementById("btn-start")!.addEventListener("click", () => {
     // ぼうけんを1からやり直す: history・エンディング・sessionStorage を完全クリア
     clearSession();
-    state = initialState(newSessionId(), lang);
+    state = start(initialState(newSessionId(), lang));
     currentEnding = null;
+    clearPendingAdvanceTimer();
     els.lives.textContent = hearts(state.lives);
     els.timer.textContent = formatTime(TOTAL_SECONDS);
     els.history.textContent = m.judge.historyEmpty;
@@ -310,7 +328,7 @@ async function main(): Promise<void> {
       },
       () => {
         // 時間切れ: 強制エンディング
-        state = forceEnding(state);
+        state = { ...forceEnding(state), isProcessing: false };
         void goEnding();
       },
     );
@@ -334,8 +352,11 @@ async function main(): Promise<void> {
     back: $("btn-practice-back") as HTMLButtonElement,
   };
   let practiceProcessing = false;
+  let practiceActive = false;
 
   function initPractice(): void {
+    practiceProcessing = false;
+    practiceActive = true;
     practiceEls.title.textContent = m.practice.title;
     practiceEls.image.src = "/images/practice.jpg";
     practiceEls.image.alt = m.practice.title;
@@ -367,29 +388,33 @@ async function main(): Promise<void> {
   });
 
   practiceEls.back.addEventListener("click", () => {
+    practiceActive = false;
+    practiceProcessing = false;
+    speech.stop();
     showPhase("intro");
   });
 
   // 練習判定: フロント簡易キーワード判定(サーバー不要・即時)
   function judgePractice(text: string): boolean {
     const lower = text.toLowerCase();
+    const failureKeywords = [
+      "とどけない", "届けない", "わたさない", "渡さない", "もどさない", "返さない", "かえさない",
+      "むし", "無視", "すて", "捨て", "あるく", "歩く", "いく", "行く", "とおる", "通る",
+      "ignore", "walk", "leave", "pass", "skip", "abandon", "not deliver", "don't deliver", "do not deliver",
+    ];
     const successKeywords = [
       "こうばん", "交番", "とどけ", "届け", "とどける", "届ける", "わたす", "渡す",
       "もどす", "返す", "かえす",
       "police", "return", "deliver", "bring", "hand in", "koban",
     ];
-    const failureKeywords = [
-      "むし", "無視", "すて", "捨て", "あるく", "歩く", "いく", "行く", "とおる", "通る",
-      "ignore", "walk", "leave", "pass", "skip", "abandon",
-    ];
-    if (successKeywords.some((kw) => lower.includes(kw.toLowerCase()))) return true;
     if (failureKeywords.some((kw) => lower.includes(kw.toLowerCase()))) return false;
+    if (successKeywords.some((kw) => lower.includes(kw.toLowerCase()))) return true;
     return false;
   }
 
   function submitPractice(text: string): void {
     const input = text.trim();
-    if (!input || practiceProcessing) return;
+    if (!input || practiceProcessing || !practiceActive) return;
     practiceProcessing = true;
     practiceEls.mic.disabled = true;
     practiceEls.manualBtn.disabled = true;
@@ -414,13 +439,14 @@ async function main(): Promise<void> {
   }
 
   practiceEls.mic.addEventListener("click", async () => {
-    if (practiceProcessing) return;
+    if (practiceProcessing || !practiceActive) return;
     practiceEls.micLabel.textContent = m.input.listening;
     practiceEls.interim.textContent = "";
     try {
       const text = await speech.recognizeOnce(speechLang(lang), (t) => {
         practiceEls.interim.textContent = t;
       });
+      if (!practiceActive) return;
       practiceEls.micLabel.textContent = m.practice.micLabel;
       if (text) {
         submitPractice(text);
@@ -593,6 +619,7 @@ async function main(): Promise<void> {
     if (state.phase === "ending") {
       releaseProcessing();
       // エンディング中はマイクを「しゅうりょう」にして押せないようにする
+      clearPendingAdvanceTimer();
       els.micLabel.textContent = m.input.ended;
       els.mic.disabled = true;
       els.manualBtn.disabled = true;
@@ -608,16 +635,28 @@ async function main(): Promise<void> {
     } else if (res.verdict === "Good") {
       showJudge(`${res.message} ${m.judge.goodSuffix}`);
       // 進行遅延中は入力ロック維持 → renderStage で解除
-      setTimeout(() => {
+      clearPendingAdvanceTimer();
+      pendingAdvanceTimer = window.setTimeout(() => {
+        if (state.phase !== "stage") {
+          pendingAdvanceTimer = null;
+          return;
+        }
         renderStage();
         releaseProcessing();
+        pendingAdvanceTimer = null;
       }, 1200);
     } else {
       // Great
       showJudge(`${res.message} ${m.judge.greatSuffix}`);
-      setTimeout(() => {
+      clearPendingAdvanceTimer();
+      pendingAdvanceTimer = window.setTimeout(() => {
+        if (state.phase !== "stage") {
+          pendingAdvanceTimer = null;
+          return;
+        }
         renderStage();
         releaseProcessing();
+        pendingAdvanceTimer = null;
       }, 1000);
     }
   }
@@ -679,6 +718,7 @@ async function main(): Promise<void> {
   // --- エンディング ---
   async function goEnding(): Promise<void> {
     timer.stop();
+    clearPendingAdvanceTimer();
     showPhase("ending");
     const kind = endingKind(state);
     try {
@@ -700,6 +740,9 @@ async function main(): Promise<void> {
     } catch {
       // エラー時もフォールバック表示(通信エラー時は failed.jpg)
       currentEnding = null;
+      els.mic.disabled = true;
+      els.manualBtn.disabled = true;
+      els.micLabel.textContent = m.input.ended;
       els.endingTitle.textContent = m.ending.netErrorTitle;
       els.endingResult.textContent = m.ending.failedLabel;
       els.endingResult.className = "ending-result fail";
@@ -790,6 +833,9 @@ async function main(): Promise<void> {
     clearSession();
     state = initialState(newSessionId(), lang);
     currentEnding = null;
+    clearPendingAdvanceTimer();
+    practiceActive = false;
+    speech.stop();
     els.lives.textContent = hearts(state.lives);
     els.timer.textContent = formatTime(300);
     els.emailInput.value = "";

@@ -25,6 +25,7 @@ type EndingOutput struct {
 }
 
 const endingLimit = 5 // 1キー 5回/分
+const endingHistoryLimit = 16
 
 // EndingUseCase はエンディング種の決定→ストーリー生成→永続化を指揮する。
 type EndingUseCase struct {
@@ -64,6 +65,10 @@ func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID s
 	}
 
 	endingType := domain.DecideEnding(lives, in.Cleared, route)
+	history := in.History
+	if len(history) > endingHistoryLimit {
+		history = history[len(history)-endingHistoryLimit:]
+	}
 
 	id := u.idgen.NewID()
 	story := fallbackStory(endingType, in.Lang)
@@ -73,7 +78,7 @@ func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID s
 			Lives:      lives,
 			Route:      route,
 			Lang:       in.Lang,
-			History:    in.History,
+			History:    history,
 		}); err != nil {
 			u.log.Printf("ending: story generate failed (type=%s route=%s): %v", endingType, route, err)
 		} else if s := strings.TrimSpace(generated); s != "" {
@@ -87,12 +92,11 @@ func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID s
 		Lives:      lives,
 		Route:      route,
 		Story:      story,
-		ImageFile:  "",
 		CreatedAt:  u.clock.NowISO(),
 	}
 
-	if err := u.repo.Save(ctx, ending, Image{}); err != nil {
-		return EndingOutput{}, fmt.Errorf("%w: save ending: %v", domain.ErrUpstream, err)
+	if err := u.repo.Save(ctx, ending); err != nil {
+		return EndingOutput{}, fmt.Errorf("save ending: %w", err)
 	}
 
 	return EndingOutput{

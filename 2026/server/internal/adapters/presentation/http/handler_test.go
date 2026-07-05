@@ -38,8 +38,8 @@ func (s *stubJudge) Judge(ctx context.Context, st domain.Stage, in string, lang 
 func (s *stubStory) Generate(ctx context.Context, in usecase.StoryInput) (string, error) {
 	return s.out, s.err
 }
-func (s *stubRepo) Save(ctx context.Context, e domain.Ending, img usecase.Image) error { return nil }
-func (s *stubRepo) Load(ctx context.Context, id string) (domain.Ending, error)         { return s.e, s.err }
+func (s *stubRepo) Save(ctx context.Context, e domain.Ending) error            { return nil }
+func (s *stubRepo) Load(ctx context.Context, id string) (domain.Ending, error) { return s.e, s.err }
 
 type fakeLimiter struct{ allow bool }
 type fakeID struct{ id string }
@@ -107,7 +107,7 @@ func TestResultHandler_NotFound(t *testing.T) {
 }
 
 func TestResultHandler_OK_URLsAbsolute(t *testing.T) {
-	e := domain.Ending{ID: "xyz", EndingType: domain.EndingSuccess, Story: "story", ImageFile: "xyz.png", CreatedAt: "2026-07-02T00:00:00Z"}
+	e := domain.Ending{ID: "xyz", EndingType: domain.EndingSuccess, Story: "story", CreatedAt: "2026-07-02T00:00:00Z"}
 	h := newHandlerWithStubs(t, usecase.JudgeOutput{}, nil, e, nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/api/result/xyz", nil)
@@ -119,7 +119,7 @@ func TestResultHandler_OK_URLsAbsolute(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
 		t.Fatal(err)
 	}
-	if res.ImageURL != "https://example.com/img/xyz.png" {
+	if res.ImageURL != "https://example.com/images/successful.jpg" {
 		t.Errorf("bad image url: %s", res.ImageURL)
 	}
 	if res.ResultURL != "https://example.com/r/xyz" {
