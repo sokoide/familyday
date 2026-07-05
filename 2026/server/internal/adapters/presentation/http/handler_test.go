@@ -119,7 +119,7 @@ func TestResultHandler_OK_URLsAbsolute(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
 		t.Fatal(err)
 	}
-	if res.ImageURL != "https://example.com/images/successful.jpg" {
+	if res.ImageURL != "https://example.com/images/successfulw.jpg" {
 		t.Errorf("bad image url: %s", res.ImageURL)
 	}
 	if res.ResultURL != "https://example.com/r/xyz" {

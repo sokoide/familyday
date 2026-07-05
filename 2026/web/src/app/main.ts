@@ -362,7 +362,7 @@ async function main(): Promise<void> {
     practiceProcessing = false;
     practiceActive = true;
     practiceEls.title.textContent = m.practice.title;
-    practiceEls.image.src = "/images/practice.jpg";
+    practiceEls.image.src = "/images/practicew.jpg";
     practiceEls.image.alt = m.practice.title;
     practiceEls.situation.textContent = m.practice.situation;
     practiceEls.goal.textContent = m.practice.goal;
@@ -491,8 +491,8 @@ async function main(): Promise<void> {
     const st = m.stage.stages[state.stageIndex];
     const ref = STAGES[state.stageIndex];
     els.stageTitle.textContent = m.stage.prefix(ref.number) + st.title;
-    // 固定のステージ画像(public/images/s{N}.jpg)を表示
-    els.stageImage.src = `/images/s${ref.number}.jpg`;
+    // 固定のステージ画像(public/images/s{N}w.jpg)を表示
+    els.stageImage.src = `/images/s${ref.number}w.jpg`;
     els.stageImage.alt = st.title;
     els.stageSituation.textContent = st.situation;
     els.stageGoal.textContent = st.goal;
@@ -742,7 +742,7 @@ async function main(): Promise<void> {
       renderEnding(res, state.timeUp);
       saveSession(state, res);
     } catch {
-      // エラー時もフォールバック表示(通信エラー時は failed.jpg)
+      // エラー時もフォールバック表示(通信エラー時は failedw.jpg)
       currentEnding = null;
       els.mic.disabled = true;
       els.manualBtn.disabled = true;
@@ -750,7 +750,7 @@ async function main(): Promise<void> {
       els.endingTitle.textContent = m.ending.netErrorTitle;
       els.endingResult.textContent = m.ending.failedLabel;
       els.endingResult.className = "ending-result fail";
-      els.endingImage.src = "/images/failed.jpg";
+      els.endingImage.src = "/images/failedw.jpg";
       els.endingImage.alt = m.ending.shortLabel.gameover;
       els.endingImage.onerror = () => {
         els.endingImage.src = fallbackImage(m.ending.fallbackEmoji.gameover, m.ending.shortLabel.gameover);
@@ -762,10 +762,10 @@ async function main(): Promise<void> {
     currentEnding = res;
     els.endingTitle.textContent = m.ending.titles[res.endingType] ?? m.ending.fallbackTitle;
 
-    // 固定のエンディング画像(public/images/{successful,failed}.jpg)を表示。
-    // great/success → successful.jpg、gameover → failed.jpg
+    // 固定のエンディング画像(public/images/{successful,failed}w.jpg)を表示。
+    // great/success → successfulw.jpg、gameover → failedw.jpg
     const isClear = res.endingType === "great" || res.endingType === "success";
-    els.endingImage.src = `/images/${isClear ? "successful" : "failed"}.jpg`;
+    els.endingImage.src = `/images/${isClear ? "successful" : "failed"}w.jpg`;
     els.endingImage.alt = isClear ? m.ending.shortLabel.success : m.ending.shortLabel.gameover;
     // タイムアップ時は専用メッセージ、それ以外は通常の成功/失敗ラベル
     const resultLabel = isClear ? m.ending.clearedLabel : (timeout ? m.ending.timeoutLabel : m.ending.failedLabel);
@@ -806,11 +806,11 @@ async function main(): Promise<void> {
     lines.push(isClear ? m.ending.clearedLabel : (state.timeUp ? m.ending.timeoutLabel : m.ending.failedLabel));
     lines.push("");
     // 画像URL(ステージ1-4 + エンディング)
-    lines.push(`${IMAGE_BASE}/s1.jpg`);
-    lines.push(`${IMAGE_BASE}/s2.jpg`);
-    lines.push(`${IMAGE_BASE}/s3.jpg`);
-    lines.push(`${IMAGE_BASE}/s4.jpg`);
-    lines.push(`${IMAGE_BASE}/${isClear ? "successful" : "failed"}.jpg`);
+    lines.push(`${IMAGE_BASE}/s1w.jpg`);
+    lines.push(`${IMAGE_BASE}/s2w.jpg`);
+    lines.push(`${IMAGE_BASE}/s3w.jpg`);
+    lines.push(`${IMAGE_BASE}/s4w.jpg`);
+    lines.push(`${IMAGE_BASE}/${isClear ? "successful" : "failed"}w.jpg`);
     lines.push("");
     // 署名
     lines.push(MAIL_SIGNATURE);
@@ -899,7 +899,7 @@ async function renderResultPage(
 
     // 固定のエンディング画像を表示(great/success → successful、gameover → failed)
     const isClear = t === "great" || t === "success";
-    img.src = `/images/${isClear ? "successful" : "failed"}.jpg`;
+    img.src = `/images/${isClear ? "successful" : "failed"}w.jpg`;
     img.alt = isClear ? m.ending.shortLabel.success : m.ending.shortLabel.gameover;
     result.textContent = isClear ? m.ending.clearedLabel : m.ending.failedLabel;
     result.className = `ending-result ${isClear ? "clear" : "fail"}`;
@@ -925,11 +925,11 @@ async function renderResultPage(
       bodyLines.push(
         isClear ? m.ending.clearedLabel : m.ending.failedLabel,
         "",
-        `${IMAGE_BASE}/s1.jpg`,
-        `${IMAGE_BASE}/s2.jpg`,
-        `${IMAGE_BASE}/s3.jpg`,
-        `${IMAGE_BASE}/s4.jpg`,
-        `${IMAGE_BASE}/${isClear ? "successful" : "failed"}.jpg`,
+        `${IMAGE_BASE}/s1w.jpg`,
+        `${IMAGE_BASE}/s2w.jpg`,
+        `${IMAGE_BASE}/s3w.jpg`,
+        `${IMAGE_BASE}/s4w.jpg`,
+        `${IMAGE_BASE}/${isClear ? "successful" : "failed"}w.jpg`,
         "",
         MAIL_SIGNATURE,
       );

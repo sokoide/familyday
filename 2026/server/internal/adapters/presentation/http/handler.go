@@ -30,7 +30,7 @@ func (h *Handler) resultURL(id string) string {
 
 func (h *Handler) endingImageURL(t domain.EndingType) string {
 	isClear := t == domain.EndingGreat || t == domain.EndingSuccess
-	return h.baseURL + "/images/" + map[bool]string{true: "successful.jpg", false: "failed.jpg"}[isClear]
+	return h.baseURL + "/images/" + map[bool]string{true: "successfulw.jpg", false: "failedw.jpg"}[isClear]
 }
 
 func (h *Handler) Judge(w http.ResponseWriter, r *http.Request) {

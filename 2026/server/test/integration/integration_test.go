@@ -157,7 +157,7 @@ func TestIntegration_Ending(t *testing.T) {
 	}
 	imgURL, _ := res["imageUrl"].(string)
 	resURL, _ := res["resultUrl"].(string)
-	if imgURL != "https://integration.test/images/successful.jpg" {
+	if imgURL != "https://integration.test/images/successfulw.jpg" {
 		t.Errorf("bad imageUrl: %s", imgURL)
 	}
 	if !strings.HasPrefix(resURL, "https://integration.test/r/") {
