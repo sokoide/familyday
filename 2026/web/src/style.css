@@ -180,11 +180,13 @@ body {
   margin: 0 0 8px;
 }
 .stage-image {
-  width: 100%;
+  width: 70%;
+  max-width: 70%;
   border-radius: 12px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
   margin: 0 auto 8px;
   display: block;
+  height: auto;
 }
 .goal {
   color: var(--accent);
@@ -358,9 +360,20 @@ body {
   text-align: center;
 }
 .ending-image {
-  width: 100%;
+  width: 70%;
+  max-width: 70%;
   border-radius: var(--radius);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+img[src$=".jpg"],
+img[src$=".JPG"] {
+  width: 70%;
+  max-width: 70%;
+  height: auto;
 }
 .ending-result {
   font-size: clamp(16px, 4.5vw, 20px);
