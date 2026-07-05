@@ -183,7 +183,6 @@ async function main(): Promise<void> {
     endingTitle: $("ending-title"),
     endingImage: $("ending-image") as HTMLImageElement,
     endingResult: $("ending-result") as HTMLElement,
-    endingStory: $("ending-story") as HTMLElement,
     endingHistoryTitle: $("ending-history-title") as HTMLElement,
     endingHistory: $("ending-history") as HTMLUListElement,
     emailInput: $("email-input") as HTMLInputElement,
@@ -314,7 +313,6 @@ async function main(): Promise<void> {
     els.endingImage.src = "";
     els.endingTitle.textContent = "";
     els.endingResult.textContent = "";
-    els.endingStory.textContent = "";
     // エンディングで無効化したマイク・入力を再度有効化
     if (speech.isSupported()) {
       els.mic.disabled = false;
@@ -750,7 +748,6 @@ async function main(): Promise<void> {
       els.endingTitle.textContent = m.ending.netErrorTitle;
       els.endingResult.textContent = m.ending.failedLabel;
       els.endingResult.className = "ending-result fail";
-      els.endingStory.textContent = m.ending.netErrorStory;
       els.endingImage.src = "/images/failed.jpg";
       els.endingImage.alt = m.ending.shortLabel.gameover;
       els.endingImage.onerror = () => {
@@ -772,7 +769,6 @@ async function main(): Promise<void> {
     const resultLabel = isClear ? m.ending.clearedLabel : (timeout ? m.ending.timeoutLabel : m.ending.failedLabel);
     els.endingResult.textContent = resultLabel;
     els.endingResult.className = `ending-result ${isClear ? "clear" : "fail"}`;
-    els.endingStory.textContent = res.story;
     els.endingImage.onerror = () => {
       els.endingImage.src = fallbackImage(
         m.ending.fallbackEmoji[res.endingType],
@@ -849,7 +845,6 @@ async function main(): Promise<void> {
     // 履歴・トースト・判定メッセージをクリア
     els.history.textContent = m.judge.historyEmpty;
     els.endingHistory.textContent = m.judge.historyEmpty;
-    els.endingStory.textContent = "";
     els.judgeReason.hidden = true;
     // エンディングで無効化したマイクを再有効化(intro → btn-start でも再設定される)
     if (speech.isSupported()) {
