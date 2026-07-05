@@ -60,6 +60,6 @@ func BuildMux(ctx context.Context, opts Options) (http.Handler, error) {
 	mux.HandleFunc("/api/ending", h.Ending)
 	mux.HandleFunc("/api/result/", h.Result)
 	mux.Handle("/img/", http.StripPrefix("/img/", safeFileServer(filepath.Join(opts.DataDir, "generated"))))
-	mux.HandleFunc("/", spaHandler(opts.StaticDir))
+	mux.HandleFunc("/", spaHandler(opts.StaticDir, opts.BaseURL))
 	return mux, nil
 }

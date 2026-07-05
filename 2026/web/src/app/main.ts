@@ -20,8 +20,9 @@ const LANG_KEY = "fd-lang";
 const SESSION_STATE_KEY = "fd-game-state";
 const SESSION_ENDING_KEY = "fd-ending-result";
 
-// メール本文に記載する画像URLのbase。window.__FD_IMAGE_BASE__ で上書き可能(無ければデフォルト)。
-const DEFAULT_IMAGE_BASE = "https://lab.sokoide.com/familyday/2026/images";
+// メール本文に記載する画像URLのbase。window.__FD_IMAGE_BASE__ で上書き可能(無ければ現在の origin を使う)。
+const DEFAULT_IMAGE_BASE =
+  (typeof window !== "undefined" ? `${window.location.origin}/images` : "http://localhost:8080/images");
 const IMAGE_BASE: string =
   (typeof window !== "undefined" && (window as unknown as { __FD_IMAGE_BASE__?: string }).__FD_IMAGE_BASE__) ||
   DEFAULT_IMAGE_BASE;

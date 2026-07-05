@@ -13,8 +13,7 @@ export function isValidEmail(s: string): boolean {
 export function buildAdventureMailto(email: string, subject: string, bodyLines: string[]): string {
   const to = email.trim();
   const body = bodyLines.join("\n");
-  const params = new URLSearchParams({ subject, body });
-  return `mailto:${encodeURIComponent(to)}?${params.toString()}`;
+  return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 // fallback 画像 data URI(SVG)。画像生成失敗時に <img onerror> で差し替え。
