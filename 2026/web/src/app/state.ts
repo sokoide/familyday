@@ -2,7 +2,7 @@
 import type { Lang } from "./messages";
 import type { DragonRoute, JudgeResult } from "../ports/api";
 
-export type Phase = "intro" | "stage" | "ending";
+export type Phase = "intro" | "practice" | "stage" | "ending";
 
 export const MAX_LIVES = 3;
 export const TOTAL_SECONDS = 300; // 5分

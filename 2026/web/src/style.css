@@ -114,6 +114,28 @@ body {
   box-shadow: 0 2px 0 #c85a3e;
 }
 
+.mode-select {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.mode-select .big-btn {
+  flex: 1;
+  min-width: 200px;
+  max-width: 320px;
+}
+.btn-secondary {
+  background: var(--accent-2);
+  color: var(--text);
+  box-shadow: 0 6px 0 #c4a02f;
+}
+.btn-secondary:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #c4a02f;
+}
+
 .small-btn {
   background: var(--accent-2);
   color: var(--text);

@@ -21,7 +21,38 @@
           <p id="intro-line2"><span class="accent" id="intro-accent"></span></p>
           <p id="intro-hint" class="hint"></p>
         </div>
-        <button id="btn-start" class="big-btn"></button>
+        <div class="mode-select">
+          <button id="btn-start" class="big-btn"></button>
+          <button id="btn-practice" class="big-btn btn-secondary"></button>
+        </div>
+      </section>
+
+      <!-- れんしゅう -->
+      <section data-phase="practice" class="screen" hidden>
+        <div class="story-card">
+          <h2 id="practice-title" class="stage-title"></h2>
+          <img id="practice-image" class="stage-image" alt="" />
+          <p id="practice-situation"></p>
+          <p id="practice-goal" class="goal"></p>
+        </div>
+
+        <div id="practice-message" class="judge-msg" hidden></div>
+        <div id="practice-result" class="ending-result"></div>
+
+        <div class="input-area">
+          <button id="btn-practice-mic" class="mic-btn" aria-label="voice input">
+            <span class="mic-icon">🎤</span>
+            <span class="mic-label"></span>
+          </button>
+          <p id="practice-interim" class="interim" aria-live="polite"></p>
+          <details class="manual">
+            <summary id="practice-manual-summary"></summary>
+            <textarea id="practice-input" rows="2"></textarea>
+            <button id="btn-practice-manual" class="small-btn"></button>
+          </details>
+        </div>
+
+        <button id="btn-practice-back" class="big-btn btn-secondary"></button>
       </section>
 
       <!-- ステージ共通 -->

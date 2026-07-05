@@ -21,7 +21,22 @@ export interface Messages {
     lines: string[]; // ストーリーカードの行
     hint: string;
     start: string;
+    practice: string; // れんしゅうモード
     pickLang: string;
+  };
+
+  practice: {
+    title: string;
+    situation: string;
+    goal: string;
+    micLabel: string;
+    manualSummary: string;
+    manualPlaceholder: string;
+    manualBtn: string;
+    judging: string;
+    success: string;
+    failure: string;
+    back: string;
   };
 
   hud: {
@@ -96,7 +111,22 @@ const ja: Messages = {
     ],
     hint: "ハートが 3つ あります。なくならないように きをつけてね!",
     start: "ぼうけんを はじめる",
+    practice: "れんしゅう",
     pickLang: "ことばを えらぶ"
+  },
+  practice: {
+    title: "れんしゅう",
+    situation:
+      "あるいていると、Aliceのものと おもわれる かばんの おとしものが ある。とおくに こうばん が みえる。どうする!",
+    goal: "ゆうしゃは どう する?  ことばで いってね!",
+    micLabel: "押して はなす",
+    manualSummary: "こえが とおらないとき：文字で にゅうりょく",
+    manualPlaceholder: "ゆうしゃは どう する? (ことばで いれてね)",
+    manualBtn: "おくる",
+    judging: "しんぱんちゅう…",
+    success: "せいこう! かばんを こうばんに とどけたよ!",
+    failure: "ざんねん! そのまま あるきつづけた ね…",
+    back: "もどる"
   },
   hud: { livesEmpty: "ハート なし" },
   stage: {
@@ -200,7 +230,22 @@ const en: Messages = {
     ],
     hint: "You have 3 hearts. Don't lose them all!",
     start: "Start the adventure",
+    practice: "Practice",
     pickLang: "Choose language"
+  },
+  practice: {
+    title: "Practice",
+    situation:
+      "While walking, you find a lost bag that seems to belong to Alice. You can see a police box in the distance. What do you do!",
+    goal: "What does your hero do? Say it!",
+    micLabel: "Tap & speak",
+    manualSummary: "If voice doesn't work: type it",
+    manualPlaceholder: "What does your hero do? (type it)",
+    manualBtn: "Send",
+    judging: "Judging…",
+    success: "Success! You delivered the bag to the police box!",
+    failure: "Too bad! You just kept walking…",
+    back: "Back"
   },
   hud: { livesEmpty: "No hearts" },
   stage: {

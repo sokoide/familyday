@@ -102,6 +102,7 @@ function applyI18n(m: Messages): void {
   setText("intro-line2", m.intro.lines[1]);
   setText("intro-hint", m.intro.hint);
   setText("btn-start", m.intro.start);
+  setText("btn-practice", m.intro.practice);
   setText("manual-summary", m.input.manualSummary);
   setText("email-label", m.ending.emailLabel);
   setText("btn-email", m.ending.emailBtn);
@@ -305,6 +306,143 @@ async function main(): Promise<void> {
         void goEnding();
       },
     );
+  });
+
+  // --- れんしゅうモード ---
+  const practiceEls = {
+    title: $("practice-title"),
+    image: $("practice-image") as HTMLImageElement,
+    situation: $("practice-situation"),
+    goal: $("practice-goal"),
+    message: $("practice-message"),
+    result: $("practice-result") as HTMLElement,
+    mic: $("btn-practice-mic") as HTMLButtonElement,
+    micLabel: document.querySelector<HTMLElement>("#btn-practice-mic .mic-label")!,
+    interim: $("practice-interim"),
+    manualSummary: $("practice-manual-summary"),
+    manualInput: $("practice-input") as HTMLTextAreaElement,
+    manualBtn: $("btn-practice-manual") as HTMLButtonElement,
+    manualDetails: document.querySelector<HTMLDetailsElement>('section[data-phase="practice"] .manual')!,
+    back: $("btn-practice-back") as HTMLButtonElement,
+  };
+  let practiceProcessing = false;
+
+  function initPractice(): void {
+    practiceEls.title.textContent = m.practice.title;
+    practiceEls.image.src = "/images/practice.jpg";
+    practiceEls.image.alt = m.practice.title;
+    practiceEls.situation.textContent = m.practice.situation;
+    practiceEls.goal.textContent = m.practice.goal;
+    practiceEls.message.hidden = true;
+    practiceEls.result.textContent = "";
+    practiceEls.result.className = "ending-result";
+    practiceEls.interim.textContent = "";
+    practiceEls.manualInput.value = "";
+    practiceEls.manualSummary.textContent = m.practice.manualSummary;
+    practiceEls.manualInput.placeholder = m.practice.manualPlaceholder;
+    practiceEls.manualBtn.textContent = m.practice.manualBtn;
+    practiceEls.back.textContent = m.practice.back;
+    if (speech.isSupported()) {
+      practiceEls.mic.disabled = false;
+      practiceEls.micLabel.textContent = m.practice.micLabel;
+    } else {
+      practiceEls.mic.disabled = true;
+      practiceEls.micLabel.textContent = m.input.micUnsupported;
+      practiceEls.manualDetails.open = true;
+    }
+  }
+
+  document.getElementById("btn-practice")!.addEventListener("click", () => {
+    initPractice();
+    showPhase("practice");
+  });
+
+  practiceEls.back.addEventListener("click", () => {
+    showPhase("intro");
+  });
+
+  // 練習判定: フロント簡易キーワード判定(サーバー不要・即時)
+  function judgePractice(text: string): boolean {
+    const lower = text.toLowerCase();
+    const successKeywords = [
+      "こうばん", "交番", "とどけ", "届け", "とどける", "届ける", "わたす", "渡す",
+      "もどす", "返す", "かえす",
+      "police", "return", "deliver", "bring", "hand in", "koban",
+    ];
+    const failureKeywords = [
+      "むし", "無視", "すて", "捨て", "あるく", "歩く", "いく", "行く", "とおる", "通る",
+      "ignore", "walk", "leave", "pass", "skip", "abandon",
+    ];
+    if (successKeywords.some((kw) => lower.includes(kw.toLowerCase()))) return true;
+    if (failureKeywords.some((kw) => lower.includes(kw.toLowerCase()))) return false;
+    return false;
+  }
+
+  function submitPractice(text: string): void {
+    const input = text.trim();
+    if (!input || practiceProcessing) return;
+    practiceProcessing = true;
+    practiceEls.mic.disabled = true;
+    practiceEls.manualBtn.disabled = true;
+    practiceEls.interim.textContent = input;
+    practiceEls.micLabel.textContent = m.practice.judging;
+    practiceEls.message.hidden = true;
+
+    const success = judgePractice(input);
+    practiceEls.result.textContent = success ? m.practice.success : m.practice.failure;
+    practiceEls.result.className = `ending-result ${success ? "clear" : "fail"}`;
+    practiceEls.message.textContent = `"${input}"`;
+    practiceEls.message.hidden = false;
+    practiceEls.interim.textContent = "";
+
+    if (speech.isSupported()) {
+      practiceEls.mic.disabled = false;
+      practiceEls.micLabel.textContent = m.practice.micLabel;
+    }
+    practiceEls.manualBtn.disabled = false;
+    practiceProcessing = false;
+  }
+
+  practiceEls.mic.addEventListener("click", async () => {
+    if (practiceProcessing) return;
+    practiceEls.micLabel.textContent = m.input.listening;
+    practiceEls.interim.textContent = "";
+    try {
+      const text = await speech.recognizeOnce(speechLang(lang), (t) => {
+        practiceEls.interim.textContent = t;
+      });
+      practiceEls.micLabel.textContent = m.practice.micLabel;
+      if (text) {
+        submitPractice(text);
+      } else {
+        practiceEls.result.textContent = m.judge.noVoice;
+        practiceEls.result.className = "ending-result fail";
+      }
+    } catch (err) {
+      practiceEls.micLabel.textContent = m.practice.micLabel;
+      console.error("[practice speech] error:", err);
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("not-allowed") || msg.includes("service-not-allowed")) {
+        practiceEls.result.textContent = m.judge.micDenied;
+      } else if (msg.includes("not-supported")) {
+        practiceEls.result.textContent = m.judge.unsupported;
+      } else if (msg.includes("no-speech")) {
+        practiceEls.result.textContent = m.judge.noSpeech;
+      } else {
+        practiceEls.result.textContent = `${m.judge.generic} (${msg})`;
+      }
+      practiceEls.result.className = "ending-result fail";
+    }
+  });
+
+  practiceEls.manualBtn.addEventListener("click", () => {
+    submitPractice(practiceEls.manualInput.value);
+  });
+  practiceEls.manualInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submitPractice(practiceEls.manualInput.value);
+    }
   });
 
   function renderStage(): void {
