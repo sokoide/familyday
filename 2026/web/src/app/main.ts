@@ -183,6 +183,7 @@ async function main(): Promise<void> {
     endingTitle: $("ending-title"),
     endingImage: $("ending-image") as HTMLImageElement,
     endingResult: $("ending-result") as HTMLElement,
+    endingStoryText: $("ending-story-text") as HTMLElement,
     endingHistoryTitle: $("ending-history-title") as HTMLElement,
     endingHistory: $("ending-history") as HTMLUListElement,
     emailInput: $("email-input") as HTMLInputElement,
@@ -313,6 +314,7 @@ async function main(): Promise<void> {
     els.endingImage.src = "";
     els.endingTitle.textContent = "";
     els.endingResult.textContent = "";
+    els.endingStoryText.textContent = "";
     // エンディングで無効化したマイク・入力を再度有効化
     if (speech.isSupported()) {
       els.mic.disabled = false;
@@ -769,6 +771,8 @@ async function main(): Promise<void> {
     const resultLabel = isClear ? m.ending.clearedLabel : (timeout ? m.ending.timeoutLabel : m.ending.failedLabel);
     els.endingResult.textContent = resultLabel;
     els.endingResult.className = `ending-result ${isClear ? "clear" : "fail"}`;
+    // 冒険物語（Geminiが冒険履歴から生成した約400字の物語）を表示
+    els.endingStoryText.textContent = res.story || "";
     els.endingImage.onerror = () => {
       els.endingImage.src = fallbackImage(
         m.ending.fallbackEmoji[res.endingType],
@@ -845,6 +849,8 @@ async function main(): Promise<void> {
     // 履歴・トースト・判定メッセージをクリア
     els.history.textContent = m.judge.historyEmpty;
     els.endingHistory.textContent = m.judge.historyEmpty;
+    els.endingResult.textContent = "";
+    els.endingStoryText.textContent = "";
     els.judgeReason.hidden = true;
     // エンディングで無効化したマイクを再有効化(intro → btn-start でも再設定される)
     if (speech.isSupported()) {

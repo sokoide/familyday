@@ -374,6 +374,12 @@ body {
 .ending-result.fail {
   color: var(--danger);
 }
+.ending-story-text {
+  font-size: clamp(13px, 3.5vw, 16px);
+  line-height: 1.8;
+  margin: 12px 0 4px;
+  text-align: left;
+}
 .ending-story {
   background: var(--card);
   border-radius: var(--radius);
