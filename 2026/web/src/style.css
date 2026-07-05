@@ -41,7 +41,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 .screen[hidden] {
@@ -180,13 +180,30 @@ body {
   margin: 0 0 8px;
 }
 .stage-image {
-  width: 70%;
-  max-width: 70%;
+  width: 100%;
   border-radius: 12px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
-  margin: 0 auto 8px;
   display: block;
   height: auto;
+}
+.stage-content {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+.stage-content .stage-image {
+  flex: 0 0 75%;
+  width: 75%;
+  max-width: 75%;
+  flex-shrink: 0;
+}
+.stage-text {
+  flex: 0 0 25%;
+  width: 25%;
+  max-width: 25%;
+  min-width: 0;
 }
 .goal {
   color: var(--accent);
@@ -323,7 +340,7 @@ body {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 180px;
+  max-height: 100px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
