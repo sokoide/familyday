@@ -93,17 +93,3 @@ func firstText(resp *genai.GenerateContentResponse) (string, error) {
 	}
 	return "", errors.New("no text part")
 }
-
-// firstInlineImage はレスポンスの最初のインライン画像(Blob)を取り出す。無ければ error。
-// Nano Banana 系画像生成モデルは画像を content parts の InlineData で返す。
-func firstInlineImage(resp *genai.GenerateContentResponse) (*genai.Blob, error) {
-	if resp == nil || len(resp.Candidates) == 0 || resp.Candidates[0].Content == nil {
-		return nil, errors.New("no candidates")
-	}
-	for _, p := range resp.Candidates[0].Content.Parts {
-		if p.InlineData != nil && len(p.InlineData.Data) > 0 {
-			return p.InlineData, nil
-		}
-	}
-	return nil, errors.New("no image part")
-}

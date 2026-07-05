@@ -4,7 +4,6 @@ go 1.26
 
 require (
 	github.com/joho/godotenv v1.5.1
-	golang.org/x/image v0.43.0
 	google.golang.org/genai v1.62.0
 )
 
