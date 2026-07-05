@@ -47,7 +47,7 @@ flowchart LR
 ```
 
 - **LLM**: Google Gemini API(`gemini-3.1-flash-lite` で判定・エンディング要約)
-- **画像**: `web/public/images/` の固定 JPG(`s1-s4.jpg`, `successful.jpg`, `failed.jpg`, `practice.jpg`)
+- **画像**: `web/public/images/` の固定 JPG(`s1w-s4w.jpg`, `successfulw.jpg`, `failedw.jpg`, `practicew.jpg`)
 - **音声入力**: Web Speech API(ブラウザ内蔵)。HTTPS または localhost が必要(公開サーバ前提なのでOK)
 - **持ち帰り**: QR/メールのURLはサーバの公開ドメインそのまま(1週間アクセス可能)
 
@@ -134,7 +134,7 @@ stateDiagram-v2
 4. セッションを保存する
 5. `goEnding()` でエンディングAPIを呼ぶ
 6. API 成功時はエンディング要約と固定 JPG を表示する
-7. API 失敗時は `failed.jpg` と通信エラー用の文面を表示する
+7. API 失敗時は `failedw.jpg` と通信エラー用の文面を表示する
 
 **エンディング3分岐**(`DecideEnding`):
 
@@ -155,7 +155,7 @@ intro画面の「れんしゅう」ボタンから、マイク操作に慣れる
   - 交番に届ける系（「こうばん」「とどける」「police」「return」等）→ 成功(緑)
   - 無視して立ち去る系（「むし」「あるく」「ignore」「walk」等）→ 失敗(赤)
   - 否定形（「とどけない」「わたさない」等）は失敗に倒す
-- **画像**: `web/public/images/practice.jpg` を表示
+- **画像**: `web/public/images/practicew.jpg` を表示
 - 「もどる」ボタンでintroに復帰します
 
 ---
@@ -228,7 +228,7 @@ intro画面の「れんしゅう」ボタンから、マイク操作に慣れる
 { "lives": 3, "finalAction": "befriend", "cleared": true, "sessionId": "s1" }
 // res 200
 { "endingId":"abc...", "endingType":"great", "story":"...",
-  "imageUrl":"https://DOMAIN/images/successful.jpg", "resultUrl":"https://DOMAIN/r/abc" }
+  "imageUrl":"https://DOMAIN/images/successfulw.jpg", "resultUrl":"https://DOMAIN/r/abc" }
 ```
 
 ### `GET /api/result/{id}` — 結果取得(QR/メールのリンク先)
@@ -256,7 +256,7 @@ intro画面の「れんしゅう」ボタンから、マイク操作に慣れる
 - **プロンプトはすべて固定テンプレート**(`infra/gemini/prompts.go`)。ユーザー入力は判定の `contents[].user` パートに置き、システム指示には埋め込まない。
 - **判定**は JSON schema 付きの構造化出力(`verdict` enum + `message`)。セーフティブロック/空応答は Bad 判定に倒して体験を継続させます。
 - **要約**は `state.history` と最終結果から 1〜2 文で生成し、失敗時は usecase が内蔵フォールバック文に差し替えます(`ending.go` `fallbackStory`)。
-- **画像**は生成せず、`/images/s1.jpg`〜`/images/successful.jpg` / `failed.jpg` を参照します。
+- **画像**は生成せず、`/images/s1w.jpg`〜`/images/successfulw.jpg` / `failedw.jpg` を参照します。
 
 ### 生成から配信までの全体フロー
 
@@ -270,7 +270,7 @@ flowchart TB
     SG[StoryGenerator<br/>gemini/story_generator]
     RP[EndingRepo<br/>persistence/ending_repo]
     FS[(ローカル FS<br/>data/endings/*.json)]
-    STATIC[(固定 JPG<br/>server/static/images/*.jpg)]
+    STATIC[(固定 JPG<br/>server/static/images/*w.jpg)]
   end
 
   GEM[(Google Gemini API)]
@@ -280,8 +280,8 @@ flowchart TB
   UC -->|"Generate(story)"| SG --> GEM
   UC -->|"Save(ending)"| RP --> FS
   UC -->|"EndingOutput<br/>{endingId, story}"| H
-  H -->|絶対URL化<br/>imageUrl=/images/{successful|failed}.jpg<br/>resultUrl=/r/{id}| BR
-  BR -.->|GET /images/*.jpg| STATIC
+  H -->|絶対URL化<br/>imageUrl=/images/{successful|failed}w.jpg<br/>resultUrl=/r/{id}| BR
+  BR -.->|GET /images/*w.jpg| STATIC
   BR -.->|GET /r/{id}| H
 ```
 
@@ -297,7 +297,7 @@ flowchart TB
 
 ### 画像配信と URL 構築
 
-- **絶対 URL**: `Handler` が `PUBLIC_BASE_URL` + `/images/successful.jpg` または `/images/failed.jpg` を組み立てて `imageUrl` として返す。
+- **絶対 URL**: `Handler` が `PUBLIC_BASE_URL` + `/images/successfulw.jpg` または `/images/failedw.jpg` を組み立てて `imageUrl` として返す。
 - **配信ルート**: `server/static/images/` に置いた JPG をそのまま配信する。画像生成や `generated/` ディレクトリは使いません。
 - **結果ページ**: `/r/{id}` は SPA フォールバック(`spaHandler`)で `index.html` を返し、フロントが `GET /api/result/{id}` でメタ(JSON)を取得して `imageUrl` を描画する。
 - **メール**: `imageUrl` と `resultUrl` を `mailto:`(`ui/share.ts`)で共有。サーバはアドレスを一切送受信・保存しない。

@@ -121,7 +121,7 @@ const ja: Messages = {
     situation:
       "あるいていると、Aliceのものと おもわれる かばんの おとしものが ある。とおくに こうばん が みえる。どうする!",
     goal: "ゆうしゃは どう する?  ことばで いってね!",
-    micLabel: "押して はなす",
+    micLabel: "押して 話す",
     manualSummary: "こえが とおらないとき：文字で にゅうりょく",
     manualPlaceholder: "ゆうしゃは どう する? (ことばで いれてね)",
     manualBtn: "おくる",
