@@ -1,5 +1,5 @@
-// Package gemini は Google Gemini / Imagen の infra adapter 実装。
-// usecase 側のポート(LLMJudgeGateway/StoryGenerator/ImageGenerator)を満たす。
+// Package gemini は Google Gemini の infra adapter 実装。
+// usecase 側のポート(LLMJudgeGateway/StoryGenerator)を満たす。
 package gemini
 
 import (
@@ -16,33 +16,13 @@ import (
 type Config struct {
 	ModelJudge string
 	ModelStory string
-	ModelImage string // 画像生成(Nano Banana Lite 系・generate_content 使用)
-
-	// ImageSize は出力画像の1辺(px)。正方形にリサイズ。
-	// gemini-3.1-flash-lite-image は 1024x1024(1K)のみ生成するため、
-	// デフォルト(1024)ではリサイズ不要。1024以外を指定すると生成後にサーバ側でリサイズする。
-	// 他モデル(gemini-3.1-flash-image 等)へ移行時や縮小用途に使用。0 ならリサイズしない。
-	// env: GEMINI_IMAGE_SIZE (default 1024)
-	ImageSize int
-
-	// ImageCount は1回の生成あたりの候補生成数(既定1=非バッチ)。
-	// Nano Banana は generate_content 1回で1枚を返すため、N>1 は N 回生成して
-	// 最初の成功画像を採用する(失敗時のフォールバック効果)。
-	// env: GEMINI_IMAGE_COUNT (default 1)
-	ImageCount int
 }
 
 // DefaultConfig は推奨値。3.1 系 flash でコスト/レイテシ優先。
-// judge/story=3.1-flash-lite、画像=3.1-flash-lite-image(Imagen は 2026-08-17 廃止のため Nano Banana 系へ)。
-// 画像は 1024x1024(モデルのネイティブ出力)・1枚(非バッチ)。
-// サイズ/枚数は環境変数で変更可(他モデル移行時や縮小用途)。
 func DefaultConfig() Config {
 	return Config{
 		ModelJudge: "gemini-3.1-flash-lite",
 		ModelStory: "gemini-3.1-flash-lite",
-		ModelImage: "gemini-3.1-flash-lite-image",
-		ImageSize:  1024,
-		ImageCount: 1,
 	}
 }
 
@@ -140,23 +120,6 @@ func storyPrompt(t domain.EndingType, lang domain.Lang) string {
 	}
 }
 
-// imagenPrompt はエンディング画像の固定テンプレート。
-// endingType から選び、ユーザー入力は混ぜない(安全性)。
-func imagenPrompt(t domain.EndingType, route domain.DragonRoute) string {
-	common := "子供向け絵本のイラスト、明るく可愛いパステル調、童話の1ページ、暴力・血・怖い表現なし、"
-	switch t {
-	case domain.EndingGreat:
-		if route == domain.RouteBefriend {
-			return common + "勇者がドラゴンの背中に乗って仲良く空を飛び、お姫様と一緒に笑っている華やかなシーン"
-		}
-		return common + "勇者とお姫様が城で盛大なお祝いパーティー、ドラゴンも友だち、花火、ハッピーで華やか"
-	case domain.EndingSuccess:
-		return common + "けがをしながらも勇者がお姫様を無事に救出し、城の人々に「ありがとう」と感謝される温かいシーン"
-	default:
-		return common + "コミカルに勇者がドラゴンに追いかけられて城の外へ脱出、お姫様が窓から笑って手を振る前向きなシーン"
-	}
-}
-
 func indent(s string) string {
 	lines := strings.Split(s, "\n")
 	for i, l := range lines {
@@ -169,5 +132,4 @@ func indent(s string) string {
 var (
 	_ usecase.LLMJudgeGateway = (*JudgeGateway)(nil)
 	_ usecase.StoryGenerator  = (*StoryGenerator)(nil)
-	_ usecase.ImageGenerator  = (*ImageGenerator)(nil)
 )

@@ -15,10 +15,6 @@ type fakeJudge struct {
 	err    error
 }
 type fakeStory struct{ text string }
-type fakeImage struct {
-	img Image
-	err error
-}
 type fakeRepo struct {
 	saved   map[string]domain.Ending
 	saveErr error
@@ -32,9 +28,6 @@ func (f *fakeJudge) Judge(ctx context.Context, s domain.Stage, input string, lan
 }
 func (f *fakeStory) Generate(ctx context.Context, t domain.EndingType, l domain.Lives, r domain.DragonRoute, lang domain.Lang) (string, error) {
 	return f.text, nil
-}
-func (f *fakeImage) Generate(ctx context.Context, t domain.EndingType, r domain.DragonRoute) (Image, error) {
-	return f.img, f.err
 }
 func (f *fakeRepo) Save(ctx context.Context, e domain.Ending, img Image) error {
 	if f.saveErr != nil {
@@ -95,7 +88,6 @@ func TestEndingUseCase_Great(t *testing.T) {
 	repo := &fakeRepo{}
 	uc := NewEndingUseCase(
 		&fakeStory{text: "story"},
-		&fakeImage{img: Image{Bytes: []byte("png"), MIME: "image/png"}},
 		repo,
 		&fakeLimiter{allow: true},
 		&fakeID{id: "abc123"},
@@ -109,8 +101,8 @@ func TestEndingUseCase_Great(t *testing.T) {
 	if out.EndingType != domain.EndingGreat {
 		t.Errorf("want great, got %q", out.EndingType)
 	}
-	if out.EndingID != "abc123" || out.ImageFile != "abc123.png" {
-		t.Errorf("id/imagefile wrong: %+v", out)
+	if out.EndingID != "abc123" {
+		t.Errorf("id wrong: %+v", out)
 	}
 	if _, ok := repo.saved["abc123"]; !ok {
 		t.Error("ending not saved")
@@ -120,7 +112,6 @@ func TestEndingUseCase_Great(t *testing.T) {
 func TestEndingUseCase_GameOver(t *testing.T) {
 	uc := NewEndingUseCase(
 		&fakeStory{text: "s"},
-		&fakeImage{},
 		&fakeRepo{},
 		&fakeLimiter{allow: true},
 		&fakeID{id: "x"},
@@ -137,11 +128,10 @@ func TestEndingUseCase_GameOver(t *testing.T) {
 }
 
 func TestEndingUseCase_ImageFailureFallback(t *testing.T) {
-	// 画像生成失敗でもストーリーは fallback せず生成済み、保存は成功する
+	// 画像生成が無いことの回帰確認。ストーリー生成・保存は成功する。
 	repo := &fakeRepo{}
 	uc := NewEndingUseCase(
 		&fakeStory{text: "story-ok"},
-		&fakeImage{err: context.Canceled}, // 画像エラー
 		repo,
 		&fakeLimiter{allow: true},
 		&fakeID{id: "id1"},
@@ -156,6 +146,6 @@ func TestEndingUseCase_ImageFailureFallback(t *testing.T) {
 		t.Errorf("story should come from generator, got %q", out.Story)
 	}
 	if _, ok := repo.saved["id1"]; !ok {
-		t.Error("should still save on image failure")
+		t.Error("should still save")
 	}
 }

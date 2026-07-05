@@ -34,6 +34,11 @@ func (h *Handler) resultURL(id string) string {
 	return h.baseURL + "/r/" + path.Base(id)
 }
 
+func (h *Handler) endingImageURL(t domain.EndingType) string {
+	isClear := t == domain.EndingGreat || t == domain.EndingSuccess
+	return h.baseURL + "/images/" + map[bool]string{true: "successful.jpg", false: "failed.jpg"}[isClear]
+}
+
 func (h *Handler) Judge(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed", "")
@@ -88,7 +93,7 @@ func (h *Handler) Ending(w http.ResponseWriter, r *http.Request) {
 		EndingID:   out.EndingID,
 		EndingType: string(out.EndingType),
 		Story:      out.Story,
-		ImageURL:   h.imageURL(out.ImageFile),
+		ImageURL:   h.endingImageURL(out.EndingType),
 		ResultURL:  h.resultURL(out.EndingID),
 	})
 }
@@ -108,7 +113,12 @@ func (h *Handler) Result(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ResultResponse{
 		EndingType: string(e.EndingType),
 		Story:      e.Story,
-		ImageURL:   h.imageURL(e.ImageFile),
+		ImageURL:   func() string {
+			if e.ImageFile != "" {
+				return h.imageURL(e.ImageFile)
+			}
+			return h.endingImageURL(e.EndingType)
+		}(),
 		ResultURL:  h.resultURL(e.ID),
 		CreatedAt:  e.CreatedAt,
 	})

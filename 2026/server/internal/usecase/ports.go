@@ -33,11 +33,6 @@ type Image struct {
 	MIME  string // "image/png"
 }
 
-// ImageGenerator はエンディング画像を1枚生成する。
-type ImageGenerator interface {
-	Generate(ctx context.Context, t domain.EndingType, route domain.DragonRoute) (Image, error)
-}
-
 // EndingRepository はエンディング結果の永続化を行うポート。
 // img が空(Bytes 空)の場合はメタデータのみ保存し、Presentation が fallback 画像を指す。
 type EndingRepository interface {

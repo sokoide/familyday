@@ -20,27 +20,21 @@ type EndingOutput struct {
 	EndingID   string
 	EndingType domain.EndingType
 	Story      string
-	ImageFile  string // 相対ファイル名(例: {id}.png)
 }
 
 const endingLimit = 5 // 1キー 5回/分
 
-// EndingUseCase はエンディング種の決定→ストーリー生成→画像生成→永続化を指揮する。
+// EndingUseCase はエンディング種の決定→ストーリー生成→永続化を指揮する。
 type EndingUseCase struct {
 	story StoryGenerator
-	image ImageGenerator
 	repo  EndingRepository
 	lim   RateLimiter
 	idgen IDGenerator
 	clock Clock
-	log   Logger
 }
 
-func NewEndingUseCase(s StoryGenerator, im ImageGenerator, r EndingRepository, l RateLimiter, id IDGenerator, c Clock, log Logger) *EndingUseCase {
-	if log == nil {
-		log = NopLogger{}
-	}
-	return &EndingUseCase{story: s, image: im, repo: r, lim: l, idgen: id, clock: c, log: log}
+func NewEndingUseCase(s StoryGenerator, r EndingRepository, l RateLimiter, id IDGenerator, c Clock, _ Logger) *EndingUseCase {
+	return &EndingUseCase{story: s, repo: r, lim: l, idgen: id, clock: c}
 }
 
 func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID string) (EndingOutput, error) {
@@ -73,35 +67,17 @@ func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID s
 		story = fallbackStory(endingType, in.Lang)
 	}
 
-	// 画像生成(失敗時は空 Image → Presentation が fallback 静的画像へ)。
-	// エラーは上位へ伝播させないが、運用で原因(課金/クォータ等)が分かるようログ出力。
-	img, imgErr := u.image.Generate(ctx, endingType, route)
-	if imgErr != nil {
-		u.log.Printf("ending: image generate failed (type=%s route=%s): %v", endingType, route, imgErr)
-	}
-
-	imageFile := ""
-	if imgErr == nil {
-		imageFile = id + ".png"
-	}
-
 	ending := domain.Ending{
 		ID:         id,
 		EndingType: endingType,
 		Lives:      lives,
 		Route:      route,
 		Story:      story,
-		ImageFile:  imageFile,
+		ImageFile:  "",
 		CreatedAt:  u.clock.NowISO(),
 	}
 
-	// 画像生成失敗時は保存しない(Presentation が fallback 画像を指す)
-	saveImg := Image{}
-	if imgErr == nil {
-		saveImg = img
-	}
-
-	if err := u.repo.Save(ctx, ending, saveImg); err != nil {
+	if err := u.repo.Save(ctx, ending, Image{}); err != nil {
 		return EndingOutput{}, fmt.Errorf("%w: save ending: %v", domain.ErrUpstream, err)
 	}
 
@@ -109,7 +85,6 @@ func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID s
 		EndingID:   id,
 		EndingType: endingType,
 		Story:      story,
-		ImageFile:  ending.ImageFile,
 	}, nil
 }
 
