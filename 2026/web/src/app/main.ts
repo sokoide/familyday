@@ -739,7 +739,7 @@ async function main(): Promise<void> {
           reason: h.reason,
         })),
       });
-      renderEnding(res);
+      renderEnding(res, state.timeUp);
       saveSession(state, res);
     } catch {
       // エラー時もフォールバック表示(通信エラー時は failed.jpg)
@@ -759,7 +759,7 @@ async function main(): Promise<void> {
     }
   }
 
-  function renderEnding(res: EndingResult): void {
+  function renderEnding(res: EndingResult, timeout = false): void {
     currentEnding = res;
     els.endingTitle.textContent = m.ending.titles[res.endingType] ?? m.ending.fallbackTitle;
 
@@ -768,7 +768,9 @@ async function main(): Promise<void> {
     const isClear = res.endingType === "great" || res.endingType === "success";
     els.endingImage.src = `/images/${isClear ? "successful" : "failed"}.jpg`;
     els.endingImage.alt = isClear ? m.ending.shortLabel.success : m.ending.shortLabel.gameover;
-    els.endingResult.textContent = isClear ? m.ending.clearedLabel : m.ending.failedLabel;
+    // タイムアップ時は専用メッセージ、それ以外は通常の成功/失敗ラベル
+    const resultLabel = isClear ? m.ending.clearedLabel : (timeout ? m.ending.timeoutLabel : m.ending.failedLabel);
+    els.endingResult.textContent = resultLabel;
     els.endingResult.className = `ending-result ${isClear ? "clear" : "fail"}`;
     els.endingStory.textContent = res.story;
     els.endingImage.onerror = () => {
@@ -801,7 +803,7 @@ async function main(): Promise<void> {
     lines.push("");
     // エンディング結果ラベル
     const isClear = endingType === "great" || endingType === "success";
-    lines.push(isClear ? m.ending.clearedLabel : m.ending.failedLabel);
+    lines.push(isClear ? m.ending.clearedLabel : (state.timeUp ? m.ending.timeoutLabel : m.ending.failedLabel));
     lines.push("");
     // 画像URL(ステージ1-4 + エンディング)
     lines.push(`${IMAGE_BASE}/s1.jpg`);

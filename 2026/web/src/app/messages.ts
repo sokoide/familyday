@@ -92,6 +92,7 @@ export interface Messages {
     adventureHeader: string; // メール本文の冒険記録ヘッダ
     clearedLabel: string; // エンディング成功ラベル
     failedLabel: string; // エンディング失敗ラベル
+    timeoutLabel: string; // タイムアップ失敗ラベル
     restart: string;
     loading: string;
     notFound: string;
@@ -213,6 +214,7 @@ const ja: Messages = {
     adventureHeader: "— これまでの ぼうけん —",
     clearedLabel: "けっか: クリア!",
     failedLabel: "けっか: ざんねん!",
+    timeoutLabel: "じかんが きたよ!",
     restart: "もういちど",
     loading: "よみこみちゅう…",
     notFound: "きろくが みつかりませんでした"
@@ -329,6 +331,7 @@ const en: Messages = {
     adventureHeader: "— Your adventure —",
     clearedLabel: "Result: Cleared!",
     failedLabel: "Result: Try again!",
+    timeoutLabel: "Time's up!",
     restart: "Play again",
     loading: "Loading…",
     notFound: "Record not found"
