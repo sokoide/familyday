@@ -107,6 +107,7 @@ const ja: Messages = {
     subtitle: "〜 AI ゲームブック 〜",
     lines: [
       "あなたは ゆうしゃ。おひめさまを たすけるため、トムハラゴン城へ むかいます。",
+      "あなたは さまざまな まほうを 使えます。まほうの なまえは じゆうに決めてください。",
       "こえで ゆうしゃの「こうどう」を いってね!（例: どいて! / ねがいを かなえて! / すりぬける!）"
     ],
     hint: "ハートが 3つ あります。なくならないように きをつけてね!",
@@ -135,13 +136,13 @@ const ja: Messages = {
       {
         title: "遠くのお城",
         situation:
-          "とおくにドラゴン城がみえる。おひめさまは そこにいるます。でも、目の前に 川が流れていて むこうにわたれない!",
+          "とおくにトムハラゴン城がみえる。おひめさまは そこにいるます。でも、目の前に 川が流れていて むこうにわたれない!",
         goal: "どうやって むこうにわたる?  ことばで いってね!"
       },
       {
         title: "城門のゴーレム",
         situation:
-          "ドラゴン城の まえに とうちゃくした。でも、おおきくて こわい「もんばんのゴーレム」が とおせんぼしている!",
+          "トムハラゴン城の まえに とうちゃくした。でも、おおきくて こわい「もんばんのゴーレム」が とおせんぼしている!",
         goal: "ゴーレムが とおせんぼ! ゆうしゃは どう する?  ことばで いってね!"
       },
       {
@@ -207,7 +208,7 @@ const ja: Messages = {
     emailLabel: "メールで 送る",
     emailPlaceholder: "your@email.com",
     emailBtn: "メールで 送る",
-    emailSubject: "ドラゴン城の秘宝・あなたのぼうけんのきろく",
+    emailSubject: "トムハラゴン城の秘宝・あなたのぼうけんのきろく",
     emailBody: "ゆうしゃの ぼうけんきろくを おくるよ!",
     adventureHeader: "— これまでの ぼうけん —",
     clearedLabel: "けっか: クリア!",
@@ -225,7 +226,8 @@ const en: Messages = {
     title: "🐉 Tom Harragon Castle's Secret",
     subtitle: "— AI Gamebook —",
     lines: [
-      "You are a hero, heading to the Dragon Castle to save the princess.",
+      "You are a hero, heading to the Tom Harragon Castle to save the princess.",
+      "You can use various spells. Name them as you wish.",
       "Say what your hero does! (e.g.: Move! / Make a wish! / Slip past it!)"
     ],
     hint: "You have 3 hearts. Don't lose them all!",
@@ -254,7 +256,7 @@ const en: Messages = {
       {
         title: "The Castle behind a river",
         situation:
-          "The Dragon Castle is visible in the distance. But there's a river in front of you, and you can't cross it!",
+          "The Tom Harragon Castle is visible in the distance. But there's a river in front of you, and you can't cross it!",
         goal: "How do you cross the river? Say it!"
       },
       {
@@ -322,7 +324,7 @@ const en: Messages = {
     emailLabel: "Send by email",
     emailPlaceholder: "your@email.com",
     emailBtn: "Send by email",
-    emailSubject: "Dragon Castle — your adventure record",
+    emailSubject: "Tom Harragon Castle — your adventure record",
     emailBody: "Here is your hero's adventure record!",
     adventureHeader: "— Your adventure —",
     clearedLabel: "Result: Cleared!",

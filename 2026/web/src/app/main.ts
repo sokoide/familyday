@@ -168,6 +168,8 @@ async function main(): Promise<void> {
     endingTitle: $("ending-title"),
     endingImage: $("ending-image") as HTMLImageElement,
     endingResult: $("ending-result") as HTMLElement,
+    endingHistoryTitle: $("ending-history-title") as HTMLElement,
+    endingHistory: $("ending-history") as HTMLUListElement,
     emailInput: $("email-input") as HTMLInputElement,
     emailBtn: $("btn-email") as HTMLButtonElement,
     restart: $("btn-restart") as HTMLButtonElement,
@@ -453,8 +455,8 @@ async function main(): Promise<void> {
     const st = m.stage.stages[state.stageIndex];
     const ref = STAGES[state.stageIndex];
     els.stageTitle.textContent = m.stage.prefix(ref.number) + st.title;
-    // 固定のステージ画像(public/images/s{N}.png)を表示
-    els.stageImage.src = `/images/s${ref.number}.png`;
+    // 固定のステージ画像(public/images/s{N}.jpg)を表示
+    els.stageImage.src = `/images/s${ref.number}.jpg`;
     els.stageImage.alt = st.title;
     els.stageSituation.textContent = st.situation;
     els.stageGoal.textContent = st.goal;
@@ -499,20 +501,35 @@ async function main(): Promise<void> {
     void spoken; // (spoken は履歴で使用)
   }
 
-  // 履歴へ「[ステージN] 発言 → 判定(ライフ変化): 理由」を prepend。
-  function addHistory(stageIndex: number, spoken: string, res: JudgeResult): void {
-    // 初回: 空表示をクリア
-    if (els.history.textContent === m.judge.historyEmpty) {
-      els.history.textContent = "";
+  function formatHistoryItem(hItem: { stageIndex: number; spoken: string; verdict: string; livesDelta: number; reason: string; }): string {
+    const stageNo = hItem.stageIndex + 1;
+    const lifeLabel = hItem.livesDelta < 0 ? `(${m.judge.lifeDown})` : `(${m.judge.lifeNone})`;
+    const reason = hItem.reason?.trim() || m.judge.noReason;
+    const quote = hItem.spoken.length > 30 ? hItem.spoken.slice(0, 30) + "…" : hItem.spoken;
+    return `[${m.stage.prefix(stageNo).trim()}] "${quote}" → ${hItem.verdict} ${lifeLabel}: ${reason}`;
+  }
+
+  function renderHistoryList(
+    list: HTMLUListElement,
+    historyItems: Array<{ stageIndex: number; spoken: string; verdict: string; livesDelta: number; reason: string; }>,
+    emptyText: string,
+  ): void {
+    list.textContent = "";
+    if (historyItems.length === 0) {
+      list.textContent = emptyText;
+      return;
     }
-    const li = document.createElement("li");
-    li.className = `history-item verdict-${res.verdict.toLowerCase()}`;
-    const stageNo = stageIndex + 1;
-    const lifeLabel = res.livesDelta < 0 ? `(${m.judge.lifeDown})` : `(${m.judge.lifeNone})`;
-    const reason = res.reason?.trim() || m.judge.noReason;
-    const quote = spoken.length > 30 ? spoken.slice(0, 30) + "…" : spoken;
-    li.textContent = `[${m.stage.prefix(stageNo).trim()}] "${quote}" → ${res.verdict} ${lifeLabel}: ${reason}`;
-    els.history.prepend(li);
+    for (const hItem of historyItems) {
+      const li = document.createElement("li");
+      li.className = `history-item verdict-${hItem.verdict.toLowerCase()}`;
+      li.textContent = formatHistoryItem(hItem);
+      list.append(li);
+    }
+  }
+
+  function refreshHistoryViews(): void {
+    renderHistoryList(els.history, state.history, m.judge.historyEmpty);
+    renderHistoryList(els.endingHistory, state.history, m.judge.historyEmpty);
   }
 
   // 判定API呼び出し共通
@@ -565,7 +582,7 @@ async function main(): Promise<void> {
 
     // 判定理由をトースト表示(5秒) + 履歴へ蓄積
     showReason(res, spoken);
-    addHistory(prevStageIndex, spoken, res);
+    refreshHistoryViews();
 
     if (state.phase === "ending") {
       releaseProcessing();
@@ -669,11 +686,11 @@ async function main(): Promise<void> {
       renderEnding(res);
       saveSession(state, res);
     } catch {
-      // エラー時もフォールバック表示(通信エラー時は failed.png)
+      // エラー時もフォールバック表示(通信エラー時は failed.jpg)
       els.endingTitle.textContent = m.ending.netErrorTitle;
       els.endingResult.textContent = m.ending.failedLabel;
       els.endingResult.className = "ending-result fail";
-      els.endingImage.src = "/images/failed.png";
+      els.endingImage.src = "/images/failed.jpg";
       els.endingImage.alt = m.ending.shortLabel.gameover;
       els.endingImage.onerror = () => {
         els.endingImage.src = fallbackImage(m.ending.fallbackEmoji.gameover, m.ending.shortLabel.gameover);
@@ -684,10 +701,10 @@ async function main(): Promise<void> {
   function renderEnding(res: EndingResult): void {
     els.endingTitle.textContent = m.ending.titles[res.endingType] ?? m.ending.fallbackTitle;
 
-    // 固定のエンディング画像(public/images/{successful,failed}.png)を表示。
-    // great/success → successful.png、gameover → failed.png
+    // 固定のエンディング画像(public/images/{successful,failed}.jpg)を表示。
+    // great/success → successful.jpg、gameover → failed.jpg
     const isClear = res.endingType === "great" || res.endingType === "success";
-    els.endingImage.src = `/images/${isClear ? "successful" : "failed"}.png`;
+    els.endingImage.src = `/images/${isClear ? "successful" : "failed"}.jpg`;
     els.endingImage.alt = isClear ? m.ending.shortLabel.success : m.ending.shortLabel.gameover;
     els.endingResult.textContent = isClear ? m.ending.clearedLabel : m.ending.failedLabel;
     els.endingResult.className = `ending-result ${isClear ? "clear" : "fail"}`;
@@ -697,6 +714,8 @@ async function main(): Promise<void> {
         m.ending.shortLabel[res.endingType],
       );
     };
+    els.endingHistoryTitle.textContent = m.judge.historyTitle;
+    renderHistoryList(els.endingHistory, state.history, m.judge.historyEmpty);
   }
 
   // 冒険記録メールの本文を組み立てる
@@ -718,11 +737,11 @@ async function main(): Promise<void> {
     lines.push(isClear ? m.ending.clearedLabel : m.ending.failedLabel);
     lines.push("");
     // 画像URL(ステージ1-4 + エンディング)
-    lines.push(`${IMAGE_BASE}/s1.png`);
-    lines.push(`${IMAGE_BASE}/s2.png`);
-    lines.push(`${IMAGE_BASE}/s3.png`);
-    lines.push(`${IMAGE_BASE}/s4.png`);
-    lines.push(`${IMAGE_BASE}/${isClear ? "successful" : "failed"}.png`);
+    lines.push(`${IMAGE_BASE}/s1.jpg`);
+    lines.push(`${IMAGE_BASE}/s2.jpg`);
+    lines.push(`${IMAGE_BASE}/s3.jpg`);
+    lines.push(`${IMAGE_BASE}/s4.jpg`);
+    lines.push(`${IMAGE_BASE}/${isClear ? "successful" : "failed"}.jpg`);
     lines.push("");
     // 署名
     lines.push(MAIL_SIGNATURE);
@@ -753,6 +772,7 @@ async function main(): Promise<void> {
     els.emailBtn.disabled = true;
     // 履歴・トースト・判定メッセージをクリア
     els.history.textContent = m.judge.historyEmpty;
+    els.endingHistory.textContent = m.judge.historyEmpty;
     els.judgeReason.hidden = true;
     // エンディングで無効化したマイクを再有効化(intro → btn-start でも再設定される)
     if (speech.isSupported()) {
@@ -799,7 +819,7 @@ async function renderResultPage(
 
     // 固定のエンディング画像を表示(great/success → successful、gameover → failed)
     const isClear = t === "great" || t === "success";
-    img.src = `/images/${isClear ? "successful" : "failed"}.png`;
+    img.src = `/images/${isClear ? "successful" : "failed"}.jpg`;
     img.alt = isClear ? m.ending.shortLabel.success : m.ending.shortLabel.gameover;
     result.textContent = isClear ? m.ending.clearedLabel : m.ending.failedLabel;
     result.className = `ending-result ${isClear ? "clear" : "fail"}`;
@@ -819,11 +839,11 @@ async function renderResultPage(
         "",
         isClear ? m.ending.clearedLabel : m.ending.failedLabel,
         "",
-        `${IMAGE_BASE}/s1.png`,
-        `${IMAGE_BASE}/s2.png`,
-        `${IMAGE_BASE}/s3.png`,
-        `${IMAGE_BASE}/s4.png`,
-        `${IMAGE_BASE}/${isClear ? "successful" : "failed"}.png`,
+        `${IMAGE_BASE}/s1.jpg`,
+        `${IMAGE_BASE}/s2.jpg`,
+        `${IMAGE_BASE}/s3.jpg`,
+        `${IMAGE_BASE}/s4.jpg`,
+        `${IMAGE_BASE}/${isClear ? "successful" : "failed"}.jpg`,
         "",
         MAIL_SIGNATURE,
       ];
