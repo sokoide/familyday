@@ -265,6 +265,23 @@ body {
   gap: 10px;
 }
 
+.stage-actions {
+  width: 100%;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.btn-reset-stage {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 260px;
+  padding: 10px 14px;
+  line-height: 1.2;
+  white-space: normal;
+}
+
 .mic-btn {
   width: 180px;
   height: 90px;

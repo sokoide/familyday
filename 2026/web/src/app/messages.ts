@@ -46,6 +46,8 @@ export interface Messages {
   stage: {
     prefix: (n: number) => string; // "ステージ1: " 等
     stages: StageText[]; // 4ステージ分の表示テキスト
+    restart: string;
+    restartConfirm: string;
   };
 
   input: {
@@ -133,6 +135,8 @@ const ja: Messages = {
   hud: { livesEmpty: "ハート なし" },
   stage: {
     prefix: (n) => `ステージ${n}: `,
+    restart: "初めからやり直す",
+    restartConfirm: "本当にリセットしますか？",
     stages: [
       {
         title: "遠くのお城",
@@ -254,6 +258,8 @@ const en: Messages = {
   hud: { livesEmpty: "No hearts" },
   stage: {
     prefix: (n) => `Stage ${n}: `,
+    restart: "Restart from the beginning",
+    restartConfirm: "Do you really want to reset?",
     stages: [
       {
         title: "The Castle behind a river",

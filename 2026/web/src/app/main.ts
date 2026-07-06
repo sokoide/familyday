@@ -10,7 +10,6 @@ import {
   endingKind,
   forceEnding,
   initialState,
-  start,
   type GameState,
 } from "./state";
 import { createTimer, formatTime } from "./timer";
@@ -109,6 +108,7 @@ function applyI18n(m: Messages): void {
   setText("intro-hint", m.intro.hint);
   setText("btn-start", m.intro.start);
   setText("btn-practice", m.intro.practice);
+  setText("btn-stage-restart", m.stage.restart);
   setText("manual-summary", m.input.manualSummary);
   setText("email-label", m.ending.emailLabel);
   setText("btn-email", m.ending.emailBtn);
@@ -141,6 +141,7 @@ async function main(): Promise<void> {
   const timer = createTimer();
   let currentEnding: EndingResult | null = null;
   let pendingAdvanceTimer: number | null = null;
+  let gameEpoch = 0;
 
   let lang: Lang = loadLang();
   let m = getMessages(lang);
@@ -180,6 +181,7 @@ async function main(): Promise<void> {
     manualInput: $("manual-input") as HTMLTextAreaElement,
     manualBtn: $("btn-manual") as HTMLButtonElement,
     manualDetails: document.querySelector<HTMLDetailsElement>(".manual")!,
+    stageRestart: $("btn-stage-restart") as HTMLButtonElement,
     endingTitle: $("ending-title"),
     endingImage: $("ending-image") as HTMLImageElement,
     endingResult: $("ending-result") as HTMLElement,
@@ -301,25 +303,43 @@ async function main(): Promise<void> {
     els.manualBtn.disabled = !enabled;
   }
 
-  document.getElementById("btn-start")!.addEventListener("click", () => {
-    // ぼうけんを1からやり直す: history・エンディング・sessionStorage を完全クリア
+  function resetGameState(): void {
+    gameEpoch += 1;
     clearSession();
-    state = start(initialState(newSessionId(), lang));
+    state = initialState(newSessionId(), lang);
     currentEnding = null;
     clearPendingAdvanceTimer();
+    timer.stop();
+    practiceActive = false;
+    practiceProcessing = false;
+    speech.stop();
     els.lives.textContent = hearts(state.lives);
     els.timer.textContent = formatTime(TOTAL_SECONDS);
+    els.emailInput.value = "";
+    els.emailBtn.disabled = true;
     els.history.textContent = m.judge.historyEmpty;
-    els.judgeReason.hidden = true;
-    els.endingImage.src = "";
-    els.endingTitle.textContent = "";
+    els.endingHistory.textContent = m.judge.historyEmpty;
     els.endingResult.textContent = "";
     els.endingStoryText.textContent = "";
-    // エンディングで無効化したマイク・入力を再度有効化
+    els.endingImage.src = "";
+    els.endingTitle.textContent = "";
+    els.judgeReason.hidden = true;
+    els.judgeMsg.hidden = true;
+    els.interim.textContent = "";
+    els.manualInput.value = "";
+    els.manualBtn.disabled = false;
+    els.manualDetails.open = !speech.isSupported();
     if (speech.isSupported()) {
       els.mic.disabled = false;
       els.micLabel.textContent = m.input.micLabel;
+    } else {
+      els.mic.disabled = true;
+      els.micLabel.textContent = m.input.micUnsupported;
     }
+  }
+
+  function startAdventure(): void {
+    resetGameState();
     showPhase("stage");
     renderStage();
     timer.start(
@@ -336,6 +356,21 @@ async function main(): Promise<void> {
         void goEnding();
       },
     );
+  }
+
+  function returnToIntro(): void {
+    resetGameState();
+    showPhase("intro");
+  }
+
+  document.getElementById("btn-start")!.addEventListener("click", () => {
+    startAdventure();
+  });
+
+  els.stageRestart.addEventListener("click", () => {
+    if (window.confirm(m.stage.restartConfirm)) {
+      returnToIntro();
+    }
   });
 
   // --- れんしゅうモード ---
@@ -569,7 +604,7 @@ async function main(): Promise<void> {
   }
 
   // 判定API呼び出し共通
-  async function submitInput(text: string): Promise<void> {
+  async function submitInput(text: string, epoch = gameEpoch): Promise<void> {
     const input = text.trim();
     if (!input || state.isProcessing) return;
     state = { ...state, isProcessing: true };
@@ -586,8 +621,10 @@ async function main(): Promise<void> {
         input,
         lang: state.lang,
       });
+      if (epoch !== gameEpoch) return;
       onJudge(res, input);
     } catch {
+      if (epoch !== gameEpoch) return;
       showJudge(m.judge.netError);
       els.micLabel.textContent = m.input.micLabel;
       setInputsEnabled(true);
@@ -668,19 +705,22 @@ async function main(): Promise<void> {
   // マイクボタン
   els.mic.addEventListener("click", async () => {
     if (state.isProcessing) return;
+    const epoch = gameEpoch;
     els.micLabel.textContent = m.input.listening;
     els.interim.textContent = "";
     try {
       const text = await speech.recognizeOnce(speechLang(lang), (t) => {
         els.interim.textContent = t;
       });
+      if (epoch !== gameEpoch) return;
       els.micLabel.textContent = m.input.micLabel;
       if (text) {
-        await submitInput(text);
+        await submitInput(text, epoch);
       } else {
         showJudge(m.judge.noVoice);
       }
     } catch (err) {
+      if (epoch !== gameEpoch) return;
       els.micLabel.textContent = m.input.micLabel;
       // 診断のため実際のエラーコードを必ずコンソールへ(本番でもスタッフが確認可能)
       console.error("[speech] error:", err);
@@ -721,6 +761,7 @@ async function main(): Promise<void> {
 
   // --- エンディング ---
   async function goEnding(): Promise<void> {
+    const epoch = gameEpoch;
     timer.stop();
     clearPendingAdvanceTimer();
     showPhase("ending");
@@ -739,9 +780,11 @@ async function main(): Promise<void> {
           reason: h.reason,
         })),
       });
+      if (epoch !== gameEpoch) return;
       renderEnding(res, state.timeUp);
       saveSession(state, res);
     } catch {
+      if (epoch !== gameEpoch) return;
       // エラー時もフォールバック表示(通信エラー時は failedw.jpg)
       currentEnding = null;
       els.mic.disabled = true;
@@ -836,27 +879,7 @@ async function main(): Promise<void> {
 
   // もういちど
   els.restart.addEventListener("click", () => {
-    clearSession();
-    state = initialState(newSessionId(), lang);
-    currentEnding = null;
-    clearPendingAdvanceTimer();
-    practiceActive = false;
-    speech.stop();
-    els.lives.textContent = hearts(state.lives);
-    els.timer.textContent = formatTime(300);
-    els.emailInput.value = "";
-    els.emailBtn.disabled = true;
-    // 履歴・トースト・判定メッセージをクリア
-    els.history.textContent = m.judge.historyEmpty;
-    els.endingHistory.textContent = m.judge.historyEmpty;
-    els.endingResult.textContent = "";
-    els.endingStoryText.textContent = "";
-    els.judgeReason.hidden = true;
-    // エンディングで無効化したマイクを再有効化(intro → btn-start でも再設定される)
-    if (speech.isSupported()) {
-      els.mic.disabled = false;
-    }
-    showPhase("intro");
+    returnToIntro();
   });
 }
 
