@@ -22,7 +22,7 @@ func New() *Limiter {
 }
 
 // Allow は直近60秒のカウントが limit 未満なら許可し、カウントを進める。
-// ウィンドウが空になったキーは map から破棄し、メモリ無限増殖を防ぐ。
+// 期限内ヒットが無くなったキーは map から破棄し、メモリ無限増殖を防ぐ。
 func (l *Limiter) Allow(ctx context.Context, key string, limitPerMinute int) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -37,15 +37,25 @@ func (l *Limiter) Allow(ctx context.Context, key string, limitPerMinute int) boo
 		}
 	}
 
+	// 期限内ヒットが無くなったら即座に破棄(以降の枝で使い回さない)
+	if len(pruned) == 0 {
+		delete(l.windows, key)
+		if limitPerMinute <= 0 {
+			// limit 0 = 常に拒否。カウントは進めない。
+			return false
+		}
+		// 新規キー相当として 1 件目を記録して許可
+		l.windows[key] = []time.Time{l.now()}
+		return true
+	}
+
 	if len(pruned) >= limitPerMinute {
+		// 枯渇: 期限内の有効ヒットのみ保存して拒否。
+		// 次回 Allow で期限内が 0 になれば delete され、リークしない。
 		l.windows[key] = pruned
 		return false
 	}
 	pruned = append(pruned, l.now())
-	if len(pruned) == 0 {
-		delete(l.windows, key)
-	} else {
-		l.windows[key] = pruned
-	}
+	l.windows[key] = pruned
 	return true
 }

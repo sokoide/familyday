@@ -233,6 +233,10 @@ async function main(): Promise<void> {
 
     if (state.phase === "stage") {
       renderStage();
+      // 復元時に判定通信中だった場合、入力はロックされたままにする
+      // (renderStage は通常 setInputsEnabled(true) するが、
+      //  復元で isProcessing=true のまま再描画した場合は二重送信防止のため維持)。
+      if (state.isProcessing) setInputsEnabled(false);
       timer.start(
         (rem) => {
           els.timer.textContent = formatTime(rem);
@@ -242,6 +246,7 @@ async function main(): Promise<void> {
         () => {
           state = forceEnding(state);
           clearPendingAdvanceTimer();
+          speech.stop(); // 認識中なら停止(onend 経由で resolve される)
           els.mic.disabled = true;
           els.manualBtn.disabled = true;
           els.micLabel.textContent = m.input.ended;
@@ -347,11 +352,14 @@ async function main(): Promise<void> {
     timer.start(
       (rem) => {
         els.timer.textContent = formatTime(rem);
+        state.timerRemaining = rem;
+        saveSession(state);
       },
       () => {
         // 時間切れ: 強制エンディング
         state = { ...forceEnding(state), isProcessing: false };
         clearPendingAdvanceTimer();
+        speech.stop(); // 認識中なら停止(onend 経由で resolve される)
         els.mic.disabled = true;
         els.manualBtn.disabled = true;
         els.micLabel.textContent = m.input.ended;
@@ -608,7 +616,9 @@ async function main(): Promise<void> {
   // 判定API呼び出し共通
   async function submitInput(text: string, epoch = gameEpoch): Promise<void> {
     const input = text.trim();
-    if (!input || state.isProcessing) return;
+    // stage フェーズ外(タイムアップ・エンディング遷移後等)からの送信を拒否。
+    // 各呼び出し元(mic/manual)のガードに加え、ここで集約防御する。
+    if (!input || state.isProcessing || state.phase !== "stage") return;
     state = { ...state, isProcessing: true };
     setInputsEnabled(false);
     // 認識した文字をそのまま表示して「判定中」を明示(空クリアしない)
@@ -715,6 +725,9 @@ async function main(): Promise<void> {
         els.interim.textContent = t;
       });
       if (epoch !== gameEpoch) return;
+      // タイムアップ等で phase が stage から離れた場合は結果を破棄
+      // (epoch は更新されないが phase が ending に変わる経路のため)
+      if (state.phase !== "stage") return;
       els.micLabel.textContent = m.input.micLabel;
       if (text) {
         await submitInput(text, epoch);

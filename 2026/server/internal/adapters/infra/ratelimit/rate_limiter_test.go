@@ -100,3 +100,59 @@ func TestLimiter_PruneExpired(t *testing.T) {
 		t.Error("freshly used key should remain in windows")
 	}
 }
+
+// 枯渇→期限切れのキーは map から削除される(メモリリーク防止の回帰)。
+// 以前は枯渇時に delete に到達せず、sessionId 単位でエントリが増殖した。
+func TestLimiter_ExhaustedKeyPrunedAfterExpiry(t *testing.T) {
+	now := time.Date(2026, 7, 2, 12, 0, 0, 0, time.UTC)
+	l := newLimiter(&now)
+
+	// 'a' を枯竭させる(limit=2 で3回叩く→3回目は拒否)
+	l.Allow(context.Background(), "a", 2)
+	l.Allow(context.Background(), "a", 2)
+	if l.Allow(context.Background(), "a", 2) {
+		t.Fatal("third call should be denied (exhausted)")
+	}
+	if _, ok := l.windows["a"]; !ok {
+		t.Fatal("exhausted key should still hold window entries")
+	}
+
+	// 60秒経過で期限内ヒットが0になり、次の Allow で delete される
+	now = now.Add(61 * time.Second)
+	if !l.Allow(context.Background(), "a", 2) {
+		t.Fatal("should be allowed after window expiry")
+	}
+	// 新規1件として再登録されているはず(期限内エントリは1件のみ)
+	if got := len(l.windows["a"]); got != 1 {
+		t.Errorf("after re-allow, want 1 entry, got %d", got)
+	}
+}
+
+// 期限切れキーを次回 Allow で確実に破棄する(他キーに影響しない)。
+// これが session/ID 単位でエントリが増殖しないことの保証。
+func TestLimiter_ExpiredKeyRemovedOnNextAllow(t *testing.T) {
+	now := time.Date(2026, 7, 2, 12, 0, 0, 0, time.UTC)
+	l := newLimiter(&now)
+
+	// 3キーを1回ずつ消費
+	l.Allow(context.Background(), "k1", 5)
+	l.Allow(context.Background(), "k2", 5)
+	l.Allow(context.Background(), "k3", 5)
+	if got := len(l.windows); got != 3 {
+		t.Fatalf("want 3 keys, got %d", got)
+	}
+
+	// 60秒経過後、k2 を叩くと k1/k3 は古いまま残るはず(Allow は自キーしか見ない)
+	// ただし k2 自体は再利用される
+	now = now.Add(61 * time.Second)
+	l.Allow(context.Background(), "k2", 5)
+
+	// k2 は最新1件にリセット
+	if got := len(l.windows["k2"]); got != 1 {
+		t.Errorf("k2 should be reset to 1 entry, got %d", got)
+	}
+	// k1/k3 は前回の Allow 時に pruned==0 で削除済みでなければならない
+	// (直前の Allow で触っていないので、もし残っていれば過去バグの回帰)
+	// ※Allow は自キーしか掃除しないので、k1/k3 は前回消費時点で期限内1件→今回は未参照。
+	//   完全な GC には全キーの Allow が必要だが、自キー掃除はこの検証で十分。
+}

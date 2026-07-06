@@ -95,7 +95,9 @@ func (h *Handler) Ending(w http.ResponseWriter, r *http.Request) {
 				return nil
 			}
 			if len(req.History) > maxHistory {
-				req.History = req.History[:maxHistory]
+				// 最新 maxHistory 件を残す(直近の発言を物語に反映するため)。
+				// 先頭を残すと、リトライで古い発言が優先されてしまう。
+				req.History = req.History[len(req.History)-maxHistory:]
 			}
 			history := make([]usecase.AdventureEvent, 0, len(req.History))
 			for _, item := range req.History {
