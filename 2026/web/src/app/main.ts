@@ -321,7 +321,8 @@ async function main(): Promise<void> {
     els.endingHistory.textContent = m.judge.historyEmpty;
     els.endingResult.textContent = "";
     els.endingStoryText.textContent = "";
-    els.endingImage.src = "";
+    els.endingImage.onerror = null;
+    els.endingImage.removeAttribute("src");
     els.endingTitle.textContent = "";
     els.judgeReason.hidden = true;
     els.judgeMsg.hidden = true;
@@ -340,6 +341,7 @@ async function main(): Promise<void> {
 
   function startAdventure(): void {
     resetGameState();
+    state = { ...state, phase: "stage" };
     showPhase("stage");
     renderStage();
     timer.start(
