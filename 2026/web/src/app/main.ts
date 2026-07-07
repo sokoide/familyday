@@ -633,10 +633,13 @@ async function main(): Promise<void> {
         input,
         lang: state.lang,
       });
-      if (epoch !== gameEpoch) return;
+      // epoch(完全リセット検出)に加え phase も再確認: タイムアウトで ending に遷移後も
+      // gameEpoch は更新されないため、遅延判定レスポンスが到着すると onJudge が
+      // ending 状態に対して走り履歴重複や goEnding 再実行を引き起こすのを防ぐ。
+      if (epoch !== gameEpoch || state.phase !== "stage") return;
       onJudge(res, input);
     } catch {
-      if (epoch !== gameEpoch) return;
+      if (epoch !== gameEpoch || state.phase !== "stage") return;
       showJudge(m.judge.netError);
       els.micLabel.textContent = m.input.micLabel;
       setInputsEnabled(true);

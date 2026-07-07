@@ -9,15 +9,18 @@ import (
 
 // Limiter は sliding-window 風のメモリカウンタ(分単位)。
 type Limiter struct {
-	mu      sync.Mutex
-	windows map[string][]time.Time
-	now     func() time.Time
+	mu        sync.Mutex
+	windows   map[string][]time.Time
+	now       func() time.Time
+	lastSweep time.Time // 前回の全キー掃除時刻
 }
 
 func New() *Limiter {
+	n := time.Now
 	return &Limiter{
-		windows: map[string][]time.Time{},
-		now:     time.Now,
+		windows:   map[string][]time.Time{},
+		now:       n,
+		lastSweep: n(),
 	}
 }
 
@@ -26,6 +29,13 @@ func New() *Limiter {
 func (l *Limiter) Allow(ctx context.Context, key string, limitPerMinute int) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
+	// 周期的に全キーを掃除する(自キー掃除だけでは未参照の dead key が残り、
+	// sessionId 単位で map が無限増殖するのを防ぐ)。Allow 呼び出しに償却され、
+	// 60s につき最大1回しか走らないのでレイテンシ影響も小さい。
+	if l.now().Sub(l.lastSweep) >= 60*time.Second {
+		l.sweepLocked()
+	}
 
 	cutoff := l.now().Add(-60 * time.Second)
 	hits := l.windows[key]
@@ -58,4 +68,24 @@ func (l *Limiter) Allow(ctx context.Context, key string, limitPerMinute int) boo
 	pruned = append(pruned, l.now())
 	l.windows[key] = pruned
 	return true
+}
+
+// sweepLocked は全キーを走査し、期限内ヒットが無くなったキーを map から破棄する。
+// l.mu の保護下で呼ぶこと。
+func (l *Limiter) sweepLocked() {
+	cutoff := l.now().Add(-60 * time.Second)
+	for k, hits := range l.windows {
+		pruned := hits[:0]
+		for _, t := range hits {
+			if t.After(cutoff) {
+				pruned = append(pruned, t)
+			}
+		}
+		if len(pruned) == 0 {
+			delete(l.windows, k)
+		} else {
+			l.windows[k] = pruned
+		}
+	}
+	l.lastSweep = l.now()
 }

@@ -9,8 +9,9 @@ import (
 // newLimiter は固定時刻を返す now を注入した Limiter を作る(時間経過を決定的に検証)。
 func newLimiter(now *time.Time) *Limiter {
 	return &Limiter{
-		windows: map[string][]time.Time{},
-		now:     func() time.Time { return *now },
+		windows:   map[string][]time.Time{},
+		now:       func() time.Time { return *now },
+		lastSweep: *now,
 	}
 }
 
@@ -151,8 +152,36 @@ func TestLimiter_ExpiredKeyRemovedOnNextAllow(t *testing.T) {
 	if got := len(l.windows["k2"]); got != 1 {
 		t.Errorf("k2 should be reset to 1 entry, got %d", got)
 	}
-	// k1/k3 は前回の Allow 時に pruned==0 で削除済みでなければならない
-	// (直前の Allow で触っていないので、もし残っていれば過去バグの回帰)
-	// ※Allow は自キーしか掃除しないので、k1/k3 は前回消費時点で期限内1件→今回は未参照。
-	//   完全な GC には全キーの Allow が必要だが、自キー掃除はこの検証で十分。
+}
+
+// dead key が周期的な全キー掃除で除去されることの回帰。
+// 一度だけ使われて再アクセスされない sessionId が l.windows に溜まり続ける
+// (長期稼働で無限増殖する)過去バグを検出する。自キー掃除では拾えない経路。
+func TestLimiter_DeadKeysSweptPeriodically(t *testing.T) {
+	now := time.Date(2026, 7, 2, 12, 0, 0, 0, time.UTC)
+	l := newLimiter(&now)
+
+	// 多数のキーを1回ずつ消費(以降すべて再アクセスなしの dead key)
+	for i := 0; i < 50; i++ {
+		k := "dead-" + string(rune('a'+i%26)) + string(rune('a'+i/26))
+		l.Allow(context.Background(), k, 5)
+	}
+	if got := len(l.windows); got != 50 {
+		t.Fatalf("want 50 keys before sweep, got %d", got)
+	}
+
+	// 60秒以上経過させた後、別キーを Allow すると全キー掃除が発火し、
+	// 期限内ヒットの無い dead key が一斉に削除される。
+	now = now.Add(61 * time.Second)
+	l.Allow(context.Background(), "live", 5)
+
+	// 残るべきは掃除をトリガーした "live" のみ
+	if got := len(l.windows); got != 1 {
+		t.Fatalf("dead keys should be swept, want 1 key (live), got %d", got)
+	}
+	for k := range l.windows {
+		if k != "live" {
+			t.Errorf("unexpected key remained after sweep: %q", k)
+		}
+	}
 }
