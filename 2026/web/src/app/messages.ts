@@ -194,14 +194,14 @@ const ja: Messages = {
   },
   ending: {
     titles: {
-      great: "🏆 でんせつの...",
-      success: "✨ がんばった...",
+      great: "🏆 でんせつの ゆうしゃ エンド",
+      success: "✨ がんばった ゆうしゃ エンド",
       gameover: "💀 バッドエンド"
     },
     fallbackEmoji: { great: "🏆", success: "✨", gameover: "💀" },
     shortLabel: {
-      great: "でんせつの...",
-      success: "がんばった...",
+      great: "でんせつの ゆうしゃ",
+      success: "がんばった ゆうしゃ",
       gameover: "バッドエンド"
     },
     fallbackTitle: "ぼうけん おわり!",
