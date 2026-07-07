@@ -130,7 +130,7 @@ const ja: Messages = {
     judging: "しんぱんちゅう…",
     success: "せいこう! かばんを こうばんに とどけたよ!",
     failure: "ざんねん! そのまま あるきつづけた ね…",
-    back: "もどる"
+    back: "さいしょにもどる"
   },
   hud: { livesEmpty: "ハート なし" },
   stage: {
@@ -253,7 +253,7 @@ const en: Messages = {
     judging: "Judging…",
     success: "Success! You delivered the bag to the police box!",
     failure: "Too bad! You just kept walking…",
-    back: "Back"
+    back: "Back to start"
   },
   hud: { livesEmpty: "No hearts" },
   stage: {

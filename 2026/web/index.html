@@ -43,10 +43,13 @@
         </div>
 
         <div class="input-area">
-          <button id="btn-practice-mic" class="mic-btn" aria-label="voice input">
-            <span class="mic-icon">🎤</span>
-            <span id="practice-mic-label" class="mic-label"></span>
-          </button>
+          <div class="stage-actions">
+            <button id="btn-practice-back" class="small-btn btn-reset-stage"></button>
+            <button id="btn-practice-mic" class="mic-btn" aria-label="voice input">
+              <span class="mic-icon">🎤</span>
+              <span id="practice-mic-label" class="mic-label"></span>
+            </button>
+          </div>
           <p id="practice-interim" class="interim" aria-live="polite"></p>
           <details class="manual">
             <summary id="practice-manual-summary"></summary>
@@ -54,8 +57,6 @@
             <button id="btn-practice-manual" class="small-btn"></button>
           </details>
         </div>
-
-        <button id="btn-practice-back" class="big-btn btn-secondary"></button>
       </section>
 
       <!-- ステージ共通 -->
