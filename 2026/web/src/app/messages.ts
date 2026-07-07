@@ -121,16 +121,16 @@ const ja: Messages = {
   practice: {
     title: "れんしゅう",
     situation:
-      "あるいていると、Aliceのものと おもわれる かばんの おとしものが ある。とおくに こうばん が みえる。どうする!",
-    goal: "ゆうしゃは どう する?  ことばで いってね!",
-    micLabel: "押して 話す",
+      "あるいていると、Aliceのものと おもわれる かばんを みつけた。とおくに こうばん が みえる。どうする!",
+    goal: "ゆうしゃは どう する? ことばで いってね!",
+    micLabel: "クリックして 話す",
     manualSummary: "こえが とおらないとき：文字で にゅうりょく",
     manualPlaceholder: "ゆうしゃは どう する? (ことばで いれてね)",
     manualBtn: "おくる",
     judging: "しんぱんちゅう…",
     success: "せいこう! かばんを こうばんに とどけたよ!",
-    failure: "ざんねん! そのまま あるきつづけた ね…",
-    back: "さいしょにもどる"
+    failure: "ざんねん! そのまま あるきつづけちゃったね…",
+    back: "はじめにもどる"
   },
   hud: { livesEmpty: "ハート なし" },
   stage: {
@@ -141,31 +141,31 @@ const ja: Messages = {
       {
         title: "遠くのお城",
         situation:
-          "とおくにドラゴン城がみえる。おひめさまは そこにいるます。でも、目の前に 川が流れていて むこうにわたれない!",
-        goal: "どうやって むこうにわたる?  ことばで いってね!"
+          "とおくにドラゴン城がみえる。おひめさまは そこにいるよ。でも、目の前に 川が流れていて むこうにわたれない!",
+        goal: "どうやって むこうにわたる? ことばで いってね!"
       },
       {
         title: "城門のゴーレム",
         situation:
           "ドラゴン城の まえに とうちゃくした。でも、おおきくて こわい「もんばんのゴーレム」が とおせんぼしている!",
-        goal: "ゴーレムが とおせんぼ! ゆうしゃは どう する?  ことばで いってね!"
+        goal: "ゴーレムが とおせんぼ! ゆうしゃは どう する? ことばで いってね!"
       },
       {
         title: "炎のトラップ",
         situation:
-          "城の なかに はいると、つうろが がれきの ほのおで つつまれていて すすめない!",
-        goal: "ほのおが みちを ふさいでる! ゆうしゃは どう する?  ことばで いってね!"
+          "城の なかに はいると、つうろが がれきと ほのおで ふさがれていて すすめない!",
+        goal: "ほのおが みちを ふさいでる! ゆうしゃは どう する? ことばで いってね!"
       },
       {
         title: "ドラゴンとの さいしゅうけっせん",
         situation:
-          "さいじょうかいで おひめさまを はっけん!でも、おこった ドラゴンが おそいかかってきた!",
-        goal: "ドラゴンが おそいかかってきた! たおす? それとも なかよくする?  ことばで いってね!"
+          "さいじょうかいで おひめさまを はっけん! でも、おこった ドラゴンが おそいかかってきた!",
+        goal: "ドラゴンが おそいかかってきた! たおす? それとも なかよくする? ことばで いってね!"
       }
     ]
   },
   input: {
-    micLabel: "押して はなす",
+    micLabel: "クリックして 話す",
     listening: "ききとりちゅう…",
     judging: "しんぱんちゅう…",
     ended: "しゅうりょう",
@@ -175,17 +175,17 @@ const ja: Messages = {
     manualBtn: "おくる"
   },
   judge: {
-    bad: "おしい!もういちど かんがえて みよう! 💡",
-    goodSuffix: "(ライフ -1) つぎのへやへ!",
-    greatSuffix: "✨ つぎのへやへ!",
-    noVoice: "きこえなかったよ!もういちど はなしてね 🎤",
+    bad: "おしい! もういちど かんがえて みよう! 💡",
+    goodSuffix: "(ライフ -1) つぎのステージへ!",
+    greatSuffix: "✨ つぎのステージへ!",
+    noVoice: "きこえなかったよ! もういちど はなしてね 🎤",
     netError: "ちょっと つうしんエラー。もういちど ためしてね!",
     micDenied:
-      "マイクの きょかが いません。したの じでにゅうりょくを つかってね。",
-    noSpeech: "こえが きこえなかったよ!もういちど!",
+      "マイクの きょかが ありません。したの 文字で にゅうりょくを つかってね。",
+    noSpeech: "こえが きこえなかったよ! もういちど!",
     unsupported:
-      "このブラウザでは こえが つかえません。じでにゅうりょくしてね。",
-    generic: "えらーが おきました。もういちど!",
+      "このブラウザでは こえが つかえません。文字で にゅうりょくしてね。",
+    generic: "エラーが おきました。もういちど!",
     noReason: "がんばったね!",
     lifeDown: "ハート -1",
     lifeNone: "ハート へらないよ!",
@@ -233,7 +233,7 @@ const en: Messages = {
     subtitle: "— AI Gamebook —",
     lines: [
       "You are a hero, heading to the Dragon Castle to save the princess.",
-      "You can use various spells. Name them as you wish.",
+      "You can use any actions you like. Name them however you want.",
       "Say what your hero does! (e.g.: Move! / Make a wish! / Slip past it!)"
     ],
     hint: "You have 3 hearts. Don't lose them all!",
@@ -244,25 +244,25 @@ const en: Messages = {
   practice: {
     title: "Practice",
     situation:
-      "While walking, you find a lost bag that seems to belong to Alice. You can see a police box in the distance. What do you do!",
+      "While walking, you find a lost bag that seems to belong to Alice. You can see a police box in the distance. What do you do?",
     goal: "What does your hero do? Say it!",
-    micLabel: "Tap & speak",
+    micLabel: "Click to speak",
     manualSummary: "If voice doesn't work: type it",
     manualPlaceholder: "What does your hero do? (type it)",
     manualBtn: "Send",
     judging: "Judging…",
-    success: "Success! You delivered the bag to the police box!",
+    success: "Success! You handed the bag in at the police box!",
     failure: "Too bad! You just kept walking…",
-    back: "Back to start"
+    back: "Back to the start"
   },
-  hud: { livesEmpty: "No hearts" },
+  hud: { livesEmpty: "No hearts left" },
   stage: {
     prefix: (n) => `Stage ${n}: `,
     restart: "Restart from the beginning",
     restartConfirm: "Do you really want to reset?",
     stages: [
       {
-        title: "The Castle behind a river",
+        title: "The Castle Across the River",
         situation:
           "The Dragon Castle is visible in the distance. But there's a river in front of you, and you can't cross it!",
         goal: "How do you cross the river? Say it!"
@@ -276,7 +276,7 @@ const en: Messages = {
       {
         title: "The Fire Trap",
         situation:
-          "Inside the castle, the hallway is wrapped in fierce flames. You can't go forward!",
+          "Inside the castle, the hallway is blocked by fierce flames. You can't go forward!",
         goal: "Flames block the path! What does your hero do? Say it!"
       },
       {
@@ -288,7 +288,7 @@ const en: Messages = {
     ]
   },
   input: {
-    micLabel: "Tap & speak",
+    micLabel: "Click to speak",
     listening: "Listening…",
     judging: "Judging…",
     ended: "End",
@@ -298,9 +298,9 @@ const en: Messages = {
     manualBtn: "Send"
   },
   judge: {
-    bad: "So close! Think and try again! 💡",
-    goodSuffix: "(-1 heart) Next room!",
-    greatSuffix: "✨ Next room!",
+    bad: "So close! Think again and try once more! 💡",
+    goodSuffix: "(-1 heart) Next stage!",
+    greatSuffix: "✨ Next stage!",
     noVoice: "I couldn't hear you! Speak again 🎤",
     netError: "Connection trouble. Please try again!",
     micDenied: "Mic permission is off. Please use the text box below.",
@@ -308,22 +308,22 @@ const en: Messages = {
     unsupported: "Voice isn't available in this browser. Please type.",
     generic: "Something went wrong. Try again!",
     noReason: "You gave it a try!",
-    lifeDown: "Heart -1",
-    lifeNone: "no damage!",
+    lifeDown: "-1 heart",
+    lifeNone: "No damage!",
     historyTitle: "📜 Your adventure so far",
-    historyEmpty: "Start your adventure!"
+    historyEmpty: "Your adventure hasn't started yet!"
   },
   ending: {
     titles: {
       great: "🏆 Legendary Hero Ending!",
       success: "✨ Brave Hero Ending!",
-      gameover: "💀 Bad End"
+      gameover: "💀 Bad Ending"
     },
     fallbackEmoji: { great: "🏆", success: "✨", gameover: "💀" },
     shortLabel: {
       great: "Legendary Hero",
       success: "Brave Hero",
-      gameover: "Bad End"
+      gameover: "Bad Ending"
     },
     fallbackTitle: "Adventure Over!",
     fallbackStory: "The connection seems weak. Please ask the staff.",
@@ -332,11 +332,11 @@ const en: Messages = {
     emailLabel: "Send by email",
     emailPlaceholder: "your@email.com",
     emailBtn: "Send by email",
-    emailSubject: "Dragon Castle — your adventure record",
+    emailSubject: "Dragon Castle: your adventure record",
     emailBody: "Here is your hero's adventure record!",
     adventureHeader: "— Your adventure —",
     clearedLabel: "Result: Cleared!",
-    failedLabel: "Result: Try again!",
+    failedLabel: "Result: Failed!",
     timeoutLabel: "Time's up!",
     restart: "Play again",
     loading: "Loading…",

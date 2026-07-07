@@ -454,7 +454,7 @@ async function main(): Promise<void> {
     const successKeywords = [
       "こうばん", "交番", "とどけ", "届け", "とどける", "届ける", "わたす", "渡す",
       "もどす", "返す", "かえす",
-      "police", "return", "deliver", "bring", "hand in", "koban",
+      "police", "return", "deliver", "bring", "hand in", "handed in", "koban",
     ];
     if (failureKeywords.some((kw) => lower.includes(kw.toLowerCase()))) return false;
     if (successKeywords.some((kw) => lower.includes(kw.toLowerCase()))) return true;
