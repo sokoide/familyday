@@ -19,7 +19,9 @@ async function withTimeout<T>(timeoutMs: number, run: (signal: AbortSignal) => P
   try {
     return await run(controller.signal);
   } catch (e) {
-    if (e instanceof DOMException && e.name === "AbortError") {
+    // abort 例外は Node.js/テスト環境・古いブラウザ+polyfill・cross-realm
+    // (iframe 等)で DOMException になるとは限らないため、name で判定する。
+    if (e instanceof Error && e.name === "AbortError") {
       throw new Error("TIMEOUT");
     }
     throw e;
