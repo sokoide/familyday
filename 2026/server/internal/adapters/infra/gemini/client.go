@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/sokoide/familyday/server/internal/domain"
 	"github.com/sokoide/familyday/server/internal/usecase"
@@ -26,6 +27,27 @@ func NewClient(ctx context.Context, apiKey string, cfg Config) (*Client, error) 
 		return nil, fmt.Errorf("gemini: new client: %w", err)
 	}
 	return &Client{client: c, cfg: cfg}, nil
+}
+
+// CheckHealth は起動時に APIキーと判定/物語モデルが有効かを最小呼び出しで検証する。
+// NewClient はキーを保持するだけで Google 側の検証を行わないため、
+// 無効・期限切れ・割り当て枯渇のキーでもサーバは起動してしまう。これを起動時に
+// 検出し、運用開始後に全判定が 502 になる事態を防ぐ。
+// Models.Get は課金不要で 401(キー無効)・404(モデル不明)を即座に返す。
+func (c *Client) CheckHealth(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	seen := map[string]bool{}
+	for _, m := range []string{c.cfg.ModelJudge, c.cfg.ModelStory} {
+		if m == "" || seen[m] {
+			continue
+		}
+		seen[m] = true
+		if _, err := c.client.Models.Get(ctx, "models/"+m, nil); err != nil {
+			return fmt.Errorf("gemini health check failed (GEMINI_API_KEY / GEMINI_MODEL_JUDGE / GEMINI_MODEL_STORY を確認): %w", err)
+		}
+	}
+	return nil
 }
 
 // --- LLMJudgeGateway 実装 ---

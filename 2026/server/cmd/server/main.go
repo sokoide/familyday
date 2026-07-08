@@ -55,8 +55,34 @@ func main() {
 		gcfg.ModelStory = v
 	}
 
+	// 起動時に Gemini キーとモデルを検証する。NewClient はキーを保持するだけで
+	// Google 側の検証を行わないため、無効なキーでもサーバは起動してしまい、
+	// 運用開始後に全判定APIが 502 になる。これを起動時に検出して即終了させる。
+	// 一時的な上流障害で起動できない事態を避けるため数回リトライする
+	// (無効キーは即座に失敗しリトライも即終了するので、bad-key 検出は遅れない)。
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	hc, err := gemini.NewClient(ctx, apiKey, gcfg)
+	if err != nil {
+		log.Fatalf("gemini: %v (GEMINI_API_KEY を設定してください)", err)
+	}
+	var healthErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		if healthErr = hc.CheckHealth(ctx); healthErr == nil {
+			break
+		}
+		if attempt < 3 {
+			log.Printf("gemini health check failed (attempt %d/3), retrying: %v", attempt, healthErr)
+			if ctx.Err() == nil {
+				time.Sleep(2 * time.Second)
+			}
+		}
+	}
+	if healthErr != nil {
+		log.Fatalf("gemini health check failed after 3 attempts: %v", healthErr)
+	}
+
 	opts := app.Options{
-		APIKey:    os.Getenv("GEMINI_API_KEY"),
+		APIKey:    apiKey,
 		BaseURL:   envOr("PUBLIC_BASE_URL", "http://localhost:8080"),
 		DataDir:   envOr("DATA_DIR", "data"),
 		StaticDir: envOr("STATIC_DIR", "static"),
