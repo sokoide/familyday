@@ -23,7 +23,10 @@ type fakeStory struct {
 	err error
 }
 type fakeLimiter struct{ allow bool }
-type fakeID struct{ id string }
+type fakeID struct {
+	id  string
+	err error
+}
 type fakeClock struct{ ts string }
 
 func (f *fakeJudge) Judge(ctx context.Context, s domain.Stage, input string, lang domain.Lang) (JudgeResult, error) {
@@ -49,7 +52,7 @@ func (f *fakeStory) Generate(ctx context.Context, input StoryInput) (string, err
 	return f.out, f.err
 }
 func (f *fakeLimiter) Allow(ctx context.Context, key string, lim int) bool { return f.allow }
-func (f *fakeID) NewID() string                                            { return f.id }
+func (f *fakeID) NewID() (string, error)                                   { return f.id, f.err }
 func (f *fakeClock) NowISO() string                                        { return f.ts }
 
 // --- JudgeUseCase ---
@@ -127,6 +130,20 @@ func TestEndingUseCase_GameOver(t *testing.T) {
 	}
 	if out.EndingType != domain.EndingGameOver {
 		t.Errorf("want gameover, got %q", out.EndingType)
+	}
+}
+
+func TestEndingUseCase_IDFailure(t *testing.T) {
+	uc := NewEndingUseCase(
+		&fakeStory{out: "story"},
+		&fakeRepo{},
+		&fakeLimiter{allow: true},
+		&fakeID{err: errors.New("rand failed")},
+		&fakeClock{ts: "ts"},
+		NopLogger{},
+	)
+	if _, err := uc.Resolve(context.Background(), EndingInput{Lives: 0, FinalAction: "gameover", Cleared: false}, "s1"); err == nil {
+		t.Fatal("want error")
 	}
 }
 

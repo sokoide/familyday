@@ -37,6 +37,11 @@ type JudgeGateway struct {
 func NewJudgeGateway(c *Client) *JudgeGateway { return &JudgeGateway{c: c} }
 
 func (g *JudgeGateway) Judge(ctx context.Context, stage domain.Stage, input string, lang domain.Lang) (usecase.JudgeResult, error) {
+	if g.c.cfg.JudgeTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, g.c.cfg.JudgeTimeout)
+		defer cancel()
+	}
 	cfg := &genai.GenerateContentConfig{
 		SystemInstruction: &genai.Content{Parts: []*genai.Part{{Text: judgeSystemPrompt(stage, lang)}}},
 		ResponseMIMEType:  "application/json",

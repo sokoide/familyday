@@ -5,6 +5,7 @@ package gemini
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/sokoide/familyday/server/internal/domain"
 	"github.com/sokoide/familyday/server/internal/usecase"
@@ -14,15 +15,19 @@ import (
 // Config は Gemini の実行時設定。Composition Root が env から組み立てる。
 // モデル名をハードコードせず差し替え可能にする(来年変更や A/B 用)。
 type Config struct {
-	ModelJudge string
-	ModelStory string
+	ModelJudge   string
+	ModelStory   string
+	JudgeTimeout time.Duration
+	StoryTimeout time.Duration
 }
 
 // DefaultConfig は推奨値。3.1 系 flash でコスト/レイテシ優先。
 func DefaultConfig() Config {
 	return Config{
-		ModelJudge: "gemini-3.1-flash-lite",
-		ModelStory: "gemini-3.1-flash-lite",
+		ModelJudge:   "gemini-3.1-flash-lite",
+		ModelStory:   "gemini-3.1-flash-lite",
+		JudgeTimeout: 20 * time.Second,
+		StoryTimeout: 45 * time.Second,
 	}
 }
 

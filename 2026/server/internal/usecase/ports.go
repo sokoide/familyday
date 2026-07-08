@@ -58,7 +58,7 @@ type RateLimiter interface {
 // IDGenerator はエンディングID/画像ファイル名用の乱数由来文字列生成。
 // (Math/rand を domain/usecase に持ち込まないためポート化)
 type IDGenerator interface {
-	NewID() string // 予測困難な16バイト級文字列
+	NewID() (string, error) // 予測困難な16バイト級文字列
 }
 
 // Clock は現在時刻(ISO8601)を返す。

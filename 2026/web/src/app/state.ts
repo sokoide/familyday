@@ -43,10 +43,6 @@ export function initialState(sessionId: string, lang: Lang): GameState {
   };
 }
 
-export function start(s: GameState): GameState {
-  return { ...s, phase: "stage", stageIndex: 0, lives: MAX_LIVES, timerRemaining: TOTAL_SECONDS, history: [] };
-}
-
 // 判定適用。次フェーズ/ライフ/ルートを計算して新しい state を返す。
 export function applyJudge(s: GameState, res: JudgeResult): GameState {
   let lives = s.lives + res.livesDelta;

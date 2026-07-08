@@ -70,7 +70,10 @@ func (u *EndingUseCase) Resolve(ctx context.Context, in EndingInput, sessionID s
 		history = history[len(history)-endingHistoryLimit:]
 	}
 
-	id := u.idgen.NewID()
+	id, err := u.idgen.NewID()
+	if err != nil {
+		return EndingOutput{}, fmt.Errorf("generate ending id: %w", err)
+	}
 	story := fallbackStory(endingType, in.Lang)
 	if u.story != nil {
 		if generated, err := u.story.Generate(ctx, StoryInput{

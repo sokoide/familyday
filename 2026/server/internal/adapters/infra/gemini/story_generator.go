@@ -18,6 +18,11 @@ type StoryGenerator struct {
 func NewStoryGenerator(c *Client) *StoryGenerator { return &StoryGenerator{c: c} }
 
 func (s *StoryGenerator) Generate(ctx context.Context, input usecase.StoryInput) (string, error) {
+	if s.c.cfg.StoryTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, s.c.cfg.StoryTimeout)
+		defer cancel()
+	}
 	cfg := &genai.GenerateContentConfig{
 		SystemInstruction: &genai.Content{Parts: []*genai.Part{{Text: storySystemPrompt(input.Lang)}}},
 		SafetySettings:    safetySettings(),

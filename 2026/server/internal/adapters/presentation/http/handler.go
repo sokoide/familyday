@@ -3,6 +3,7 @@ package httpadapter
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"path"
 	"strings"
@@ -167,6 +168,9 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, v any) error {
 			return errRequestTooLarge
 		}
 		return err
+	}
+	if err := dec.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return errors.New("json body must contain a single object")
 	}
 	return nil
 }

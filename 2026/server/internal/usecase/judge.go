@@ -95,12 +95,14 @@ var forbiddenLifeWords = regexp.MustCompile(
 		`[Ll]ife|[Hh]eart|[Dd]amage|[Hh][Pp]\b|health`,
 )
 
+var reasonSegmentSeparators = regexp.MustCompile(`[。！!？?\n]+`)
+
 func sanitizeReason(s string) string {
 	if s == "" {
 		return s
 	}
 	// 句点・改行などで分割し、禁止ワードを含むセグメントを除去
-	segments := regexp.MustCompile(`[。！!？?\n]+`).Split(s, -1)
+	segments := reasonSegmentSeparators.Split(s, -1)
 	var clean []string
 	for _, seg := range segments {
 		seg = strings.TrimSpace(seg)

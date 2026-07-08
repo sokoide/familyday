@@ -4,6 +4,7 @@ package sysid
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"time"
 )
@@ -11,13 +12,12 @@ import (
 // UUIDGen は crypto/rand 由来の予測困難なIDを生成する。
 type UUIDGen struct{}
 
-func (UUIDGen) NewID() string {
+func (UUIDGen) NewID() (string, error) {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		// crypto/rand が使えないなら、予測可能なIDを返さず即座に落とす。
-		panic("crypto/rand unavailable")
+		return "", fmt.Errorf("crypto/rand unavailable: %w", err)
 	}
-	return hex.EncodeToString(b[:]) // 32文字
+	return hex.EncodeToString(b[:]), nil // 32文字
 }
 
 // SystemClock は実時刻を ISO8601(UTC) で返す。

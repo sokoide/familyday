@@ -46,7 +46,7 @@ type fakeID struct{ id string }
 type fakeClock struct{ ts string }
 
 func (f *fakeLimiter) Allow(context.Context, string, int) bool { return f.allow }
-func (f *fakeID) NewID() string                                { return f.id }
+func (f *fakeID) NewID() (string, error)                       { return f.id, nil }
 func (f *fakeClock) NowISO() string                            { return f.ts }
 
 func newHandlerWithStubs(t *testing.T, judgeOut usecase.JudgeOutput, judgeErr error, ending domain.Ending, loadErr error) *Handler {
@@ -79,6 +79,16 @@ func TestJudgeHandler_BadInput(t *testing.T) {
 	h := newHandlerWithStubs(t, usecase.JudgeOutput{}, nil, domain.Ending{}, nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/judge", strings.NewReader(`{"stageId":"stage1","input":""}`))
+	h.Judge(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("want 400, got %d", rec.Code)
+	}
+}
+
+func TestJudgeHandler_RejectsTrailingJSON(t *testing.T) {
+	h := newHandlerWithStubs(t, usecase.JudgeOutput{}, nil, domain.Ending{}, nil)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/judge", strings.NewReader(`{"stageId":"stage1","input":"x"} {}`))
 	h.Judge(rec, req)
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("want 400, got %d", rec.Code)

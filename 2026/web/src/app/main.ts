@@ -141,6 +141,8 @@ async function main(): Promise<void> {
   const timer = createTimer();
   let currentEnding: EndingResult | null = null;
   let pendingAdvanceTimer: number | null = null;
+  let reasonFadeTimer: number | null = null;
+  let reasonHideTimer: number | null = null;
   let gameEpoch = 0;
 
   let lang: Lang = loadLang();
@@ -153,6 +155,17 @@ async function main(): Promise<void> {
     if (pendingAdvanceTimer !== null) {
       window.clearTimeout(pendingAdvanceTimer);
       pendingAdvanceTimer = null;
+    }
+  }
+
+  function clearReasonTimers(): void {
+    if (reasonFadeTimer !== null) {
+      window.clearTimeout(reasonFadeTimer);
+      reasonFadeTimer = null;
+    }
+    if (reasonHideTimer !== null) {
+      window.clearTimeout(reasonHideTimer);
+      reasonHideTimer = null;
     }
   }
 
@@ -281,6 +294,7 @@ async function main(): Promise<void> {
     state = { ...state, lang };
     localStorage.setItem(LANG_KEY, lang);
     applyI18n(m);
+    if (state.phase !== "intro") saveSession(state, currentEnding ?? undefined);
     if (state.phase === "stage") renderStage();
     els.historyTitle.textContent = m.judge.historyTitle;
     if (els.history.children.length === 0) {
@@ -314,6 +328,7 @@ async function main(): Promise<void> {
     state = initialState(newSessionId(), lang);
     currentEnding = null;
     clearPendingAdvanceTimer();
+    clearReasonTimers();
     timer.stop();
     practiceActive = false;
     practiceProcessing = false;
@@ -330,6 +345,7 @@ async function main(): Promise<void> {
     els.endingImage.removeAttribute("src");
     els.endingTitle.textContent = "";
     els.judgeReason.hidden = true;
+    els.judgeReason.classList.remove("fade-out");
     els.judgeMsg.hidden = true;
     els.interim.textContent = "";
     els.manualInput.value = "";
@@ -570,13 +586,16 @@ async function main(): Promise<void> {
     body.textContent = `💡 ${reason}`;
     els.judgeReason.append(head, body);
     els.judgeReason.hidden = false;
+    clearReasonTimers();
     // アニメ: 表示 → 5秒後にフェード
     els.judgeReason.classList.remove("fade-out");
     void els.judgeReason.offsetWidth; // リフロー強制で再アニメ対応
-    window.setTimeout(() => {
+    reasonFadeTimer = window.setTimeout(() => {
       els.judgeReason.classList.add("fade-out");
-      window.setTimeout(() => {
+      reasonFadeTimer = null;
+      reasonHideTimer = window.setTimeout(() => {
         els.judgeReason.hidden = true;
+        reasonHideTimer = null;
       }, 600);
     }, 5000);
     void spoken; // (spoken は履歴で使用)
@@ -637,7 +656,7 @@ async function main(): Promise<void> {
       // gameEpoch は更新されないため、遅延判定レスポンスが到着すると onJudge が
       // ending 状態に対して走り履歴重複や goEnding 再実行を引き起こすのを防ぐ。
       if (epoch !== gameEpoch || state.phase !== "stage") return;
-      onJudge(res, input);
+      onJudge(res, input, epoch);
     } catch {
       if (epoch !== gameEpoch || state.phase !== "stage") return;
       showJudge(m.judge.netError);
@@ -652,7 +671,7 @@ async function main(): Promise<void> {
     state = { ...state, isProcessing: false };
   }
 
-  function onJudge(res: JudgeResult, spoken: string): void {
+  function onJudge(res: JudgeResult, spoken: string, epoch: number): void {
     const prevStageIndex = state.stageIndex;
     state = applyJudge(state, res);
 
@@ -693,7 +712,7 @@ async function main(): Promise<void> {
       // 進行遅延中は入力ロック維持 → renderStage で解除
       clearPendingAdvanceTimer();
       pendingAdvanceTimer = window.setTimeout(() => {
-        if (state.phase !== "stage") {
+        if (epoch !== gameEpoch || state.phase !== "stage") {
           pendingAdvanceTimer = null;
           return;
         }
@@ -706,7 +725,7 @@ async function main(): Promise<void> {
       showJudge(`${res.message} ${m.judge.greatSuffix}`);
       clearPendingAdvanceTimer();
       pendingAdvanceTimer = window.setTimeout(() => {
-        if (state.phase !== "stage") {
+        if (epoch !== gameEpoch || state.phase !== "stage") {
           pendingAdvanceTimer = null;
           return;
         }
